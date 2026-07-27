@@ -32,8 +32,8 @@ export default function ResultsPanel({ summary, convergenceHistory, algorithmId 
       <p className="eyebrow">Results</p>
       <h3>{summary.title}</h3>
       <ul className="results-panel__lines">
-        {summary.lines.map((line) => (
-          <li key={line}>{line}</li>
+        {summary.lines.map((line, i) => (
+          <li key={`${i}-${line}`}>{line}</li>
         ))}
       </ul>
 

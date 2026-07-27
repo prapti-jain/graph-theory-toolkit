@@ -233,10 +233,20 @@ export function computeHighlightsFromSteps(
     ) {
       setNode(step.to ?? step.node, 'current')
       setEdge(step.from, step.to, 'current')
-    } else if (action === 'consider' || action === 'accept' || action === 'add') {
+    } else if (action === 'consider') {
+      // Candidate edge under review — gold "current", not yet in the MST.
       if (step.edge) {
         setEdge(null, null, 'current', step.edge)
         setNode(step.edge[0], 'current')
+        if (step.edge[1] != null) setNode(step.edge[1], 'current')
+      }
+    } else if (action === 'accept' || action === 'add') {
+      // Keep the edge green (mst role already applied in the loop); only
+      // pulse the endpoints as current so the legend MST color is visible
+      // as each edge joins the tree — including on the final step.
+      if (step.edge) {
+        setNode(step.edge[0], 'current')
+        if (step.edge[1] != null) setNode(step.edge[1], 'current')
       }
       if (step.node != null) setNode(step.node, 'current')
     } else if (action === 'augment' && step.path?.length) {

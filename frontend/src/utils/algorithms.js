@@ -71,10 +71,10 @@ export const ALGORITHM_CATEGORIES = [
       {
         id: 'prims',
         label: "Prim's",
-        needs: ['start'],
+        // Grows from an arbitrary node on the backend; no start/goal UI.
+        needs: [],
         run: api.runPrims,
         preferUndirected: true,
-        startOptional: true,
       },
       {
         id: 'mst-compare',
@@ -304,24 +304,36 @@ export function formatAlgorithmResult(algorithmId, result) {
         ],
       }
     case 'kruskals':
-    case 'prims':
+    case 'prims': {
+      const edges = result.edges || []
       return {
         title: 'Minimum spanning tree',
         lines: [
           `Total weight: ${formatNum(result.total_weight)}`,
-          `Edges: ${(result.edges || [])
-            .map((e) => `${e.u}–${e.v} (${formatNum(e.weight)})`)
-            .join(', ')}`,
+          `MST edges (${edges.length}):`,
+          ...edges.map(
+            (e) => `${e.u} – ${e.v}  (weight ${formatNum(e.weight)})`,
+          ),
         ],
       }
-    case 'mst-compare':
+    }
+    case 'mst-compare': {
+      const fmtEdges = (edges) =>
+        (edges || [])
+          .map((e) => `${e.u}–${e.v} (${formatNum(e.weight)})`)
+          .join(', ') || '—'
+      const k = result.kruskals || {}
+      const p = result.prims || {}
       return {
         title: 'MST comparison',
         lines: [
           `Shared total weight: ${formatNum(result.total_weight)}`,
+          `Kruskal's: ${formatNum(k.time_ms)} ms · ${fmtEdges(k.edges)}`,
+          `Prim's: ${formatNum(p.time_ms)} ms · ${fmtEdges(p.edges)}`,
           result.note || `Faster: ${result.faster}`,
         ],
       }
+    }
     case 'max-flow':
       return {
         title: 'Maximum flow',
