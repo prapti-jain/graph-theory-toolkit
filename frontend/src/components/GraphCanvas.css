@@ -1,0 +1,46 @@
+.graph-canvas {
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;
+  /* vis-network often gets a 0px canvas when only height:100% is used in flex layouts */
+  min-height: 600px;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(54, 78, 110, 0.22), transparent 55%),
+    linear-gradient(180deg, #121820 0%, #0e1218 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.graph-canvas__viewport {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+}
+
+.graph-canvas__empty {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 0.35rem;
+  color: var(--muted);
+}
+
+.graph-canvas__empty p {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.graph-canvas__empty span {
+  font-size: 0.9rem;
+}

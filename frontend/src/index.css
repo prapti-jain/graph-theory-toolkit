@@ -1,13 +1,40 @@
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-body {
+html,
+body,
+#root {
   margin: 0;
-  min-height: 100vh;
-  background: linear-gradient(160deg, #eef2f0 0%, #d8e0dc 100%);
+  min-height: 100%;
 }
 
-#root {
-  min-height: 100vh;
+body {
+  background: #0b0f14;
+  color: #e8eef6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2d3b4d;
+  border-radius: 999px;
+  border: 2px solid #121820;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }

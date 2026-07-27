@@ -40,6 +40,7 @@ from algorithms.traversal import (
     tarjan_scc,
 )
 from datasets.loader import load_karate_club
+from graph_core.generators import grid_graph, random_graph, random_weighted_graph
 from graph_core.graph import Graph
 
 BENCHMARK_RESULTS_PATH = (
@@ -608,6 +609,71 @@ def dataset_karate_club() -> dict[str, Any]:
         "num_nodes": graph.num_nodes,
         "num_edges": graph.num_edges,
     }
+
+
+class GenerateGraphBody(BaseModel):
+    """Request body for synthetic graph generation."""
+
+    type: str = Field(..., description="'random' or 'grid'")
+    directed: bool = False
+    weighted: bool = False
+    n: int = Field(default=12, ge=1, le=500)
+    p: float = Field(default=0.25, ge=0.0, le=1.0)
+    rows: int = Field(default=4, ge=1, le=50)
+    cols: int = Field(default=4, ge=1, le=50)
+    min_weight: float = 1.0
+    max_weight: float = 10.0
+
+
+def _serialize_graph(graph: Graph, *, name: str | None = None) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "directed": graph.directed,
+        "weighted": graph.weighted,
+        "nodes": [
+            {"id": node, **graph.get_node_attrs(node)}
+            for node in graph.get_nodes()
+        ],
+        "edges": [
+            {"u": u, "v": v, "weight": w}
+            for u, v, w in graph.get_edges()
+        ],
+        "num_nodes": graph.num_nodes,
+        "num_edges": graph.num_edges,
+    }
+    if name is not None:
+        payload["name"] = name
+    return payload
+
+
+@router.post("/api/graphs/generate")
+def graphs_generate(body: GenerateGraphBody) -> dict[str, Any]:
+    try:
+        if body.type == "random":
+            if body.weighted and not body.directed:
+                graph = random_weighted_graph(
+                    body.n, body.p, body.min_weight, body.max_weight
+                )
+            else:
+                graph = random_graph(
+                    body.n,
+                    body.p,
+                    directed=body.directed,
+                    weighted=body.weighted,
+                )
+            name = f"Random ER (n={body.n}, p={body.p})"
+        elif body.type == "grid":
+            graph = grid_graph(body.rows, body.cols)
+            # Grid generator is undirected/unweighted; surface that clearly.
+            name = f"Grid ({body.rows}×{body.cols})"
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="type must be 'random' or 'grid'",
+            )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return _serialize_graph(graph, name=name)
 
 
 @router.get("/api/benchmarks/results")
