@@ -2,6 +2,7 @@ fastapi
 uvicorn
 networkx
 numpy
+scipy
 matplotlib
 pytest
 pydantic

@@ -8,6 +8,12 @@ from typing import Any, Hashable, Optional, Union
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from algorithms.centrality import (
+    betweenness_centrality,
+    closeness_centrality,
+    eigenvector_centrality,
+    pagerank,
+)
 from algorithms.flows import (
     bipartite_matching,
     ford_fulkerson,
@@ -31,6 +37,7 @@ from algorithms.traversal import (
     find_bridges,
     tarjan_scc,
 )
+from datasets.loader import load_karate_club
 from graph_core.graph import Graph
 
 router = APIRouter()
@@ -57,6 +64,9 @@ class GraphBody(BaseModel):
     sink: Optional[NodeId] = None
     left_nodes: Optional[list[NodeId]] = None
     right_nodes: Optional[list[NodeId]] = None
+    damping: float = 0.85
+    max_iterations: int = 100
+    tolerance: float = 1e-6
     coordinates: Optional[dict[str, list[float]]] = Field(
         default=None,
         description='Optional node coordinates: {"node_id": [x, y]}',
@@ -497,4 +507,98 @@ def flows_hopcroft_karp(body: GraphBody) -> dict[str, Any]:
         "matching": [{"left": u, "right": v} for u, v in pairs],
         "size": size,
         "steps": steps,
+    }
+
+
+def _json_score_map(scores: dict[Hashable, float]) -> dict[str, float]:
+    return {str(k): float(v) for k, v in scores.items()}
+
+
+@router.post("/api/centrality/pagerank")
+def centrality_pagerank(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body)
+    steps: list[dict[str, Any]] = []
+    try:
+        ranks, iterations, history = pagerank(
+            graph,
+            damping=body.damping,
+            max_iterations=body.max_iterations,
+            tolerance=body.tolerance,
+            record_steps=steps,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "ranks": _json_score_map(ranks),
+        "iterations": iterations,
+        "convergence_history": history,
+        "steps": steps,
+    }
+
+
+@router.post("/api/centrality/betweenness")
+def centrality_betweenness(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body)
+    steps: list[dict[str, Any]] = []
+    scores = betweenness_centrality(graph, record_steps=steps)
+    return {
+        "scores": _json_score_map(scores),
+        "steps": steps,
+    }
+
+
+@router.post("/api/centrality/closeness")
+def centrality_closeness(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body)
+    steps: list[dict[str, Any]] = []
+    scores = closeness_centrality(graph, record_steps=steps)
+    return {
+        "scores": _json_score_map(scores),
+        "steps": steps,
+    }
+
+
+@router.post("/api/centrality/eigenvector")
+def centrality_eigenvector(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body)
+    steps: list[dict[str, Any]] = []
+    try:
+        scores, iterations, history = eigenvector_centrality(
+            graph,
+            max_iterations=body.max_iterations,
+            tolerance=body.tolerance,
+            record_steps=steps,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "scores": _json_score_map(scores),
+        "iterations": iterations,
+        "convergence_history": history,
+        "steps": steps,
+    }
+
+
+@router.get("/api/datasets/karate-club")
+def dataset_karate_club() -> dict[str, Any]:
+    graph = load_karate_club()
+    return {
+        "name": "Zachary's Karate Club",
+        "directed": graph.directed,
+        "weighted": graph.weighted,
+        "nodes": [
+            {
+                "id": node,
+                **graph.get_node_attrs(node),
+            }
+            for node in graph.get_nodes()
+        ],
+        "edges": [
+            {"u": u, "v": v, "weight": w}
+            for u, v, w in graph.get_edges()
+        ],
+        "num_nodes": graph.num_nodes,
+        "num_edges": graph.num_edges,
     }
