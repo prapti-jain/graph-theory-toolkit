@@ -1,5 +1,11 @@
 """Algorithm package exports."""
 
+from .flows import (
+    bipartite_matching,
+    ford_fulkerson,
+    hopcroft_karp,
+    min_cut,
+)
 from .mst import compare_mst_algorithms, kruskals, prims
 from .shortest_paths import (
     a_star,
@@ -44,4 +50,8 @@ __all__ = [
     "kruskals",
     "prims",
     "compare_mst_algorithms",
+    "ford_fulkerson",
+    "min_cut",
+    "bipartite_matching",
+    "hopcroft_karp",
 ]

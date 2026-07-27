@@ -8,6 +8,12 @@ from typing import Any, Hashable, Optional, Union
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from algorithms.flows import (
+    bipartite_matching,
+    ford_fulkerson,
+    hopcroft_karp,
+    min_cut,
+)
 from algorithms.mst import compare_mst_algorithms, kruskals, prims
 from algorithms.shortest_paths import (
     a_star,
@@ -47,6 +53,10 @@ class GraphBody(BaseModel):
     weighted: bool = False
     start: Optional[NodeId] = None
     goal: Optional[NodeId] = None
+    source: Optional[NodeId] = None
+    sink: Optional[NodeId] = None
+    left_nodes: Optional[list[NodeId]] = None
+    right_nodes: Optional[list[NodeId]] = None
     coordinates: Optional[dict[str, list[float]]] = Field(
         default=None,
         description='Optional node coordinates: {"node_id": [x, y]}',
@@ -385,5 +395,106 @@ def mst_compare(body: GraphBody) -> dict[str, Any]:
         "total_weight": result["total_weight"],
         "faster": result["faster"],
         "note": result["note"],
+        "steps": steps,
+    }
+
+
+def _require_source_sink(body: GraphBody) -> tuple[Hashable, Hashable]:
+    source = body.source if body.source is not None else body.start
+    sink = body.sink if body.sink is not None else body.goal
+    if source is None or sink is None:
+        raise HTTPException(
+            status_code=400,
+            detail="'source' and 'sink' (or start/goal) are required",
+        )
+    return source, sink
+
+
+def _require_bipartition(body: GraphBody) -> tuple[list[NodeId], list[NodeId]]:
+    if not body.left_nodes or not body.right_nodes:
+        raise HTTPException(
+            status_code=400,
+            detail="'left_nodes' and 'right_nodes' are required",
+        )
+    return body.left_nodes, body.right_nodes
+
+
+def _json_flow(flow: dict) -> list[dict[str, Any]]:
+    return [
+        {"u": u, "v": v, "flow": amount}
+        for (u, v), amount in flow.items()
+    ]
+
+
+@router.post("/api/flows/max-flow")
+def flows_max_flow(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, directed=True, weighted=True)
+    source, sink = _require_source_sink(body)
+    steps: list[dict[str, Any]] = []
+    try:
+        value, flow = ford_fulkerson(
+            graph, source, sink, record_steps=steps
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "max_flow": value,
+        "flow": _json_flow(flow),
+        "steps": steps,
+    }
+
+
+@router.post("/api/flows/min-cut")
+def flows_min_cut(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, directed=True, weighted=True)
+    source, sink = _require_source_sink(body)
+    steps: list[dict[str, Any]] = []
+    try:
+        value, cut_edges = min_cut(graph, source, sink, record_steps=steps)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "cut_value": value,
+        "cut_edges": [
+            {"u": u, "v": v, "capacity": cap} for u, v, cap in cut_edges
+        ],
+        "steps": steps,
+    }
+
+
+@router.post("/api/flows/bipartite-matching")
+def flows_bipartite_matching(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, weighted=False)
+    left, right = _require_bipartition(body)
+    steps: list[dict[str, Any]] = []
+    try:
+        pairs, size = bipartite_matching(
+            graph, left, right, record_steps=steps
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "matching": [{"left": u, "right": v} for u, v in pairs],
+        "size": size,
+        "steps": steps,
+    }
+
+
+@router.post("/api/flows/hopcroft-karp")
+def flows_hopcroft_karp(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, weighted=False)
+    left, right = _require_bipartition(body)
+    steps: list[dict[str, Any]] = []
+    try:
+        pairs, size = hopcroft_karp(graph, left, right, record_steps=steps)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "matching": [{"left": u, "right": v} for u, v in pairs],
+        "size": size,
         "steps": steps,
     }
