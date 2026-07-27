@@ -50,10 +50,17 @@ export default function GraphInputPanel({ graph, onGraphChange }) {
     setDirected(nextDirected)
     setWeighted(nextWeighted)
     if (graph) {
+      const nextEdges = (graph.edges || []).map((e) => ({
+        ...e,
+        // Switching to unweighted forces unit weights so canvas/API stay consistent.
+        weight: nextWeighted ? e.weight ?? 1 : 1,
+        directed: nextDirected,
+      }))
       onGraphChange({
         ...graph,
         directed: nextDirected,
         weighted: nextWeighted,
+        edges: nextEdges,
       })
     }
   }
@@ -405,7 +412,8 @@ function normalizeApiGraph(data) {
       id: `e-${e.u}-${e.v}-${i}`,
       from: e.u,
       to: e.v,
-      weight: e.weight,
+      // Unweighted graphs always use unit weight; never keep random leftovers.
+      weight: weighted ? Number(e.weight ?? 1) : 1,
       directed,
     })),
   }

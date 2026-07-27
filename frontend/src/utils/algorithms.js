@@ -28,11 +28,18 @@ export const ALGORITHM_CATEGORIES = [
     id: 'shortest',
     label: 'Shortest Paths',
     algorithms: [
-      { id: 'dijkstra', label: "Dijkstra", needs: ['start'], run: api.runDijkstra },
+      {
+        id: 'dijkstra',
+        label: 'Dijkstra',
+        needs: ['start', 'goal'],
+        goalOptional: true,
+        run: api.runDijkstra,
+      },
       {
         id: 'bellman-ford',
         label: 'Bellman–Ford',
-        needs: ['start'],
+        needs: ['start', 'goal'],
+        goalOptional: true,
         run: api.runBellmanFord,
       },
       {
@@ -248,22 +255,42 @@ export function formatAlgorithmResult(algorithmId, result) {
     case 'bellman-ford':
     case 'a-star': {
       const path = result.path
+      const distances = result.distances || {}
       const dist =
         result.distance ??
         (path && path.length
-          ? result.distances?.[String(path[path.length - 1])]
+          ? distances[String(path[path.length - 1])]
           : null)
+
+      if (path && path.length) {
+        return {
+          title: algorithmId === 'a-star' ? 'A* shortest path' : 'Shortest path',
+          lines: [
+            `Path: ${path.join(' → ')}`,
+            `Total distance: ${formatNum(dist)}`,
+          ],
+        }
+      }
+
+      // No goal (or unreachable): show full distance table from start.
+      const rows = Object.entries(distances)
+        .map(([node, d]) => [node, Number(d)])
+        .sort((a, b) => {
+          const na = Number(a[0])
+          const nb = Number(b[0])
+          if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb
+          return String(a[0]).localeCompare(String(b[0]))
+        })
+
       return {
-        title: algorithmId === 'a-star' ? 'A* path' : 'Shortest paths',
-        lines: [
-          path
-            ? `Path: ${path.join(' → ')}`
-            : 'Path: (select a goal, or unreachable)',
-          dist != null ? `Distance: ${formatNum(dist)}` : null,
-          result.distances
-            ? `Reachable: ${Object.keys(result.distances).length} nodes`
-            : null,
-        ].filter(Boolean),
+        title: 'Shortest distances from start',
+        lines:
+          rows.length === 0
+            ? ['No reachable nodes.']
+            : [
+                'No goal selected — distances to every reachable node:',
+                ...rows.map(([node, d]) => `${node}: ${formatNum(d)}`),
+              ],
       }
     }
     case 'floyd-warshall':

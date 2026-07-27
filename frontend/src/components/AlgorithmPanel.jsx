@@ -46,7 +46,7 @@ export default function AlgorithmPanel({
       setError('Start node is required')
       return
     }
-    if (needs.includes('goal') && goal === '') {
+    if (needs.includes('goal') && !algorithm.goalOptional && goal === '') {
       setError('Goal node is required')
       return
     }
@@ -132,10 +132,11 @@ export default function AlgorithmPanel({
         )}
         {algorithm?.needs?.includes('goal') && (
           <NodeSelect
-            label="Goal node"
+            label={algorithm.goalOptional ? 'Goal node (optional)' : 'Goal node'}
             value={goal}
             onChange={setGoal}
             options={nodeOptions}
+            allowEmpty={Boolean(algorithm.goalOptional)}
           />
         )}
         {algorithm?.needs?.includes('source') && (

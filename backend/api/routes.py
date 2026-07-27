@@ -591,24 +591,7 @@ def centrality_eigenvector(body: GraphBody) -> dict[str, Any]:
 @router.get("/api/datasets/karate-club")
 def dataset_karate_club() -> dict[str, Any]:
     graph = load_karate_club()
-    return {
-        "name": "Zachary's Karate Club",
-        "directed": graph.directed,
-        "weighted": graph.weighted,
-        "nodes": [
-            {
-                "id": node,
-                **graph.get_node_attrs(node),
-            }
-            for node in graph.get_nodes()
-        ],
-        "edges": [
-            {"u": u, "v": v, "weight": w}
-            for u, v, w in graph.get_edges()
-        ],
-        "num_nodes": graph.num_nodes,
-        "num_edges": graph.num_edges,
-    }
+    return _serialize_graph(graph, name="Zachary's Karate Club")
 
 
 class GenerateGraphBody(BaseModel):
@@ -626,6 +609,17 @@ class GenerateGraphBody(BaseModel):
 
 
 def _serialize_graph(graph: Graph, *, name: str | None = None) -> dict[str, Any]:
+    edges_out: list[dict[str, Any]] = []
+    for u, v, w in graph.get_edges():
+        edge: dict[str, Any] = {"u": u, "v": v}
+        # Only expose numeric weights when the graph is weighted; unweighted
+        # edges are unit capacity/length and must not show leftover labels.
+        if graph.weighted:
+            edge["weight"] = w
+        else:
+            edge["weight"] = 1.0
+        edges_out.append(edge)
+
     payload: dict[str, Any] = {
         "directed": graph.directed,
         "weighted": graph.weighted,
@@ -633,10 +627,7 @@ def _serialize_graph(graph: Graph, *, name: str | None = None) -> dict[str, Any]
             {"id": node, **graph.get_node_attrs(node)}
             for node in graph.get_nodes()
         ],
-        "edges": [
-            {"u": u, "v": v, "weight": w}
-            for u, v, w in graph.get_edges()
-        ],
+        "edges": edges_out,
         "num_nodes": graph.num_nodes,
         "num_edges": graph.num_edges,
     }

@@ -147,7 +147,7 @@ export default function GraphCanvas({
       .map((e, index) => {
         const id = e.id != null ? e.id : `e-${e.from}-${e.to}-${index}`
         const edgeDirected = e.directed != null ? Boolean(e.directed) : isDirected
-        const showWeight = isWeighted || e.weight != null
+        const showWeight = Boolean(isWeighted)
         const role = roles?.[String(id)]
         const isHi = Boolean(role) || hiEdges.has(String(id))
         const roleStyle = role ? EDGE_ROLE_COLORS[role] : null
@@ -155,7 +155,8 @@ export default function GraphCanvas({
           id,
           from: e.from,
           to: e.to,
-          label: showWeight && e.weight != null ? formatWeight(e.weight) : undefined,
+          label:
+            showWeight && e.weight != null ? formatWeight(e.weight) : undefined,
           arrows: edgeDirected
             ? { to: { enabled: true, scaleFactor: 0.7 } }
             : undefined,
