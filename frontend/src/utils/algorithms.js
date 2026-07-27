@@ -408,3 +408,24 @@ function parseIdList(raw) {
     .filter(Boolean)
     .map(coerceId)
 }
+
+/**
+ * Whether the graph is *actually* weighted for UI purposes.
+ *
+ * Trusts ``graph.weighted`` when false. When true (or missing), inspects
+ * edge weights: if every edge is unit weight ``1``, treat as unweighted
+ * (covers grid / karate / stale flags left on after an unweighted load).
+ */
+export function isGraphWeighted(graph) {
+  if (!graph) return false
+  if (graph.weighted === false) return false
+
+  const edges = graph.edges || []
+  if (edges.length === 0) return Boolean(graph.weighted)
+
+  return edges.some((e) => {
+    if (e.weight == null || e.weight === '') return false
+    const w = Number(e.weight)
+    return Number.isFinite(w) && w !== 1
+  })
+}

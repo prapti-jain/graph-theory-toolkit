@@ -80,11 +80,20 @@ export default function GraphInputPanel({ graph, onGraphChange }) {
         min_weight: 1,
         max_weight: 10,
       })
-      applyFlags(normalizeApiGraph(data))
+      let normalized = normalizeApiGraph(data)
+      // Grid is always undirected + unweighted — force flags so the header
+      // and sidebar toggles cannot stay stale from a prior weighted graph.
       if (genType === 'grid') {
-        setDirected(false)
-        setWeighted(false)
+        normalized = {
+          ...normalized,
+          directed: false,
+          weighted: false,
+          edges: (normalized.edges || []).map((e) => ({ ...e, weight: 1 })),
+        }
       }
+      setDirected(Boolean(normalized.directed))
+      setWeighted(Boolean(normalized.weighted))
+      applyFlags(normalized)
     } catch (err) {
       setError(err?.response?.data?.detail || err.message || 'Generate failed')
     } finally {
@@ -97,7 +106,13 @@ export default function GraphInputPanel({ graph, onGraphChange }) {
     setError(null)
     try {
       const data = await loadKarateClub()
-      const normalized = normalizeApiGraph(data)
+      const base = normalizeApiGraph(data)
+      const normalized = {
+        ...base,
+        directed: false,
+        weighted: false,
+        edges: (base.edges || []).map((e) => ({ ...e, weight: 1 })),
+      }
       setDirected(false)
       setWeighted(false)
       applyFlags(normalized)

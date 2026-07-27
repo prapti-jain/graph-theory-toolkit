@@ -10,6 +10,7 @@ import {
   buildAlgorithmBody,
   findAlgorithm,
   formatAlgorithmResult,
+  isGraphWeighted,
 } from './utils/algorithms'
 import './App.css'
 
@@ -99,6 +100,8 @@ function App() {
     [graph],
   )
 
+  const weighted = isGraphWeighted(graph)
+
   return (
     <div className="shell">
       <header className="shell__top">
@@ -132,7 +135,7 @@ function App() {
             <p className="canvas-toolbar__flags">
               {graph.directed ? 'Directed' : 'Undirected'}
               {' · '}
-              {graph.weighted ? 'Weighted' : 'Unweighted'}
+              {weighted ? 'Weighted' : 'Unweighted'}
               {algorithmId ? ` · ${findAlgorithm(algorithmId)?.label}` : ''}
             </p>
           </div>
@@ -140,7 +143,7 @@ function App() {
             nodes={graph.nodes}
             edges={graph.edges}
             directed={graph.directed}
-            weighted={graph.weighted}
+            weighted={weighted}
             highlightedNodes={animation.highlightedNodes}
             highlightedEdges={animation.highlightedEdges}
             nodeHighlightRoles={animation.nodeHighlightRoles}
