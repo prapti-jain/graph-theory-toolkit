@@ -16,10 +16,29 @@ class Graph:
         self.directed = directed
         self.weighted = weighted
         self._adj: dict[Hashable, dict[Hashable, float]] = {}
+        self._node_attrs: dict[Hashable, dict[str, Any]] = {}
 
-    def add_node(self, node: Hashable) -> None:
+    def add_node(self, node: Hashable, **attrs: Any) -> None:
         if node not in self._adj:
             self._adj[node] = {}
+            self._node_attrs[node] = {}
+        if attrs:
+            self._node_attrs[node].update(attrs)
+
+    def set_node_attr(self, node: Hashable, key: str, value: Any) -> None:
+        self.add_node(node)
+        self._node_attrs[node][key] = value
+
+    def get_node_attr(
+        self,
+        node: Hashable,
+        key: str,
+        default: Any = None,
+    ) -> Any:
+        return self._node_attrs.get(node, {}).get(key, default)
+
+    def get_node_attrs(self, node: Hashable) -> dict[str, Any]:
+        return dict(self._node_attrs.get(node, {}))
 
     def add_edge(
         self,
@@ -38,6 +57,7 @@ class Graph:
         if node not in self._adj:
             return
         del self._adj[node]
+        self._node_attrs.pop(node, None)
         for neighbors in self._adj.values():
             neighbors.pop(node, None)
 

@@ -1,5 +1,14 @@
-"""Traversal / connectivity algorithm exports."""
+"""Algorithm package exports."""
 
+from .shortest_paths import (
+    a_star,
+    bellman_ford,
+    dijkstra,
+    euclidean_heuristic,
+    floyd_warshall,
+    johnsons,
+    reconstruct_path,
+)
 from .traversal import (
     bfs,
     connected_components,
@@ -22,4 +31,11 @@ __all__ = [
     "tarjan_scc",
     "find_bridges",
     "find_articulation_points",
+    "dijkstra",
+    "bellman_ford",
+    "floyd_warshall",
+    "a_star",
+    "johnsons",
+    "reconstruct_path",
+    "euclidean_heuristic",
 ]

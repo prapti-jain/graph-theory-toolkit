@@ -2,11 +2,21 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any, Hashable, Optional, Union
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from algorithms.shortest_paths import (
+    a_star,
+    bellman_ford,
+    dijkstra,
+    euclidean_heuristic,
+    floyd_warshall,
+    johnsons,
+    reconstruct_path,
+)
 from algorithms.traversal import (
     bfs,
     dfs,
@@ -22,7 +32,7 @@ NodeId = Union[int, str]
 
 
 class GraphBody(BaseModel):
-    """Shared request body for traversal endpoints."""
+    """Shared request body for graph algorithm endpoints."""
 
     edges: list[list[Any]] = Field(
         ...,
@@ -35,15 +45,22 @@ class GraphBody(BaseModel):
     directed: bool = False
     weighted: bool = False
     start: Optional[NodeId] = None
+    goal: Optional[NodeId] = None
+    coordinates: Optional[dict[str, list[float]]] = Field(
+        default=None,
+        description='Optional node coordinates: {"node_id": [x, y]}',
+    )
 
 
 def _build_graph(
     body: GraphBody,
     *,
     directed: Optional[bool] = None,
+    weighted: Optional[bool] = None,
 ) -> Graph:
     is_directed = body.directed if directed is None else directed
-    graph = Graph(directed=is_directed, weighted=body.weighted)
+    is_weighted = body.weighted if weighted is None else weighted
+    graph = Graph(directed=is_directed, weighted=is_weighted)
     if body.nodes:
         for node in body.nodes:
             graph.add_node(node)
@@ -56,6 +73,17 @@ def _build_graph(
         u, v = edge[0], edge[1]
         weight = float(edge[2]) if len(edge) >= 3 else 1.0
         graph.add_edge(u, v, weight)
+
+    if body.coordinates:
+        for key, coords in body.coordinates.items():
+            if len(coords) < 2:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"coordinates[{key!r}] must be [x, y]",
+                )
+            node: NodeId = int(key) if key.lstrip("-").isdigit() else key
+            graph.set_node_attr(node, "x", float(coords[0]))
+            graph.set_node_attr(node, "y", float(coords[1]))
     return graph
 
 
@@ -63,6 +91,31 @@ def _require_start(body: GraphBody) -> Hashable:
     if body.start is None:
         raise HTTPException(status_code=400, detail="'start' node is required")
     return body.start
+
+
+def _require_goal(body: GraphBody) -> Hashable:
+    if body.goal is None:
+        raise HTTPException(status_code=400, detail="'goal' node is required")
+    return body.goal
+
+
+def _json_number(value: float) -> Optional[float]:
+    if math.isinf(value) or math.isnan(value):
+        return None
+    return value
+
+
+def _json_dist_map(distances: dict[Hashable, float]) -> dict[str, Optional[float]]:
+    return {str(k): _json_number(v) for k, v in distances.items()}
+
+
+def _json_matrix(
+    matrix: dict[Hashable, dict[Hashable, float]],
+) -> dict[str, dict[str, Optional[float]]]:
+    return {
+        str(u): {str(v): _json_number(d) for v, d in row.items()}
+        for u, row in matrix.items()
+    }
 
 
 @router.post("/api/traversal/bfs")
@@ -139,5 +192,127 @@ def traversal_articulation_points(body: GraphBody) -> dict[str, Any]:
 
     return {
         "articulation_points": points,
+        "steps": steps,
+    }
+
+
+@router.post("/api/shortest-path/dijkstra")
+def shortest_dijkstra(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, weighted=True)
+    start = _require_start(body)
+    steps: list[dict[str, Any]] = []
+    try:
+        distances, predecessors = dijkstra(graph, start, record_steps=steps)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    path: Optional[list[Hashable]] = None
+    if body.goal is not None:
+        try:
+            path = reconstruct_path(predecessors, start, body.goal)
+        except ValueError:
+            path = None
+
+    return {
+        "distances": _json_dist_map(distances),
+        "predecessors": {
+            str(k): (None if v is None else v) for k, v in predecessors.items()
+        },
+        "path": path,
+        "steps": steps,
+    }
+
+
+@router.post("/api/shortest-path/bellman-ford")
+def shortest_bellman_ford(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, weighted=True)
+    start = _require_start(body)
+    steps: list[dict[str, Any]] = []
+    try:
+        distances, predecessors = bellman_ford(
+            graph, start, record_steps=steps
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    path: Optional[list[Hashable]] = None
+    if body.goal is not None:
+        try:
+            path = reconstruct_path(predecessors, start, body.goal)
+        except ValueError:
+            path = None
+
+    return {
+        "distances": _json_dist_map(distances),
+        "predecessors": {
+            str(k): (None if v is None else v) for k, v in predecessors.items()
+        },
+        "path": path,
+        "steps": steps,
+    }
+
+
+@router.post("/api/shortest-path/floyd-warshall")
+def shortest_floyd_warshall(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, weighted=True)
+    steps: list[dict[str, Any]] = []
+    try:
+        matrix = floyd_warshall(graph, record_steps=steps)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    path_distance: Optional[float] = None
+    if body.start is not None and body.goal is not None:
+        path_distance = _json_number(matrix[body.start][body.goal])
+
+    return {
+        "distances": _json_matrix(matrix),
+        "path_distance": path_distance,
+        "steps": steps,
+    }
+
+
+@router.post("/api/shortest-path/a-star")
+def shortest_a_star(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, weighted=True)
+    start = _require_start(body)
+    goal = _require_goal(body)
+    steps: list[dict[str, Any]] = []
+    try:
+        heuristic = euclidean_heuristic(graph, goal)
+        distances, predecessors = a_star(
+            graph, start, goal, heuristic, record_steps=steps
+        )
+        path = reconstruct_path(predecessors, start, goal)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "distances": _json_dist_map(distances),
+        "predecessors": {
+            str(k): (None if v is None else v) for k, v in predecessors.items()
+        },
+        "path": path,
+        "distance": _json_number(distances.get(goal, math.inf)),
+        "steps": steps,
+    }
+
+
+@router.post("/api/shortest-path/johnsons")
+def shortest_johnsons(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, weighted=True)
+    steps: list[dict[str, Any]] = []
+    try:
+        matrix = johnsons(graph, record_steps=steps)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    path_distance: Optional[float] = None
+    if body.start is not None and body.goal is not None:
+        path_distance = _json_number(matrix[body.start][body.goal])
+
+    return {
+        "distances": _json_matrix(matrix),
+        "path_distance": path_distance,
         "steps": steps,
     }
