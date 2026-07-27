@@ -8,6 +8,7 @@ from typing import Any, Hashable, Optional, Union
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from algorithms.mst import compare_mst_algorithms, kruskals, prims
 from algorithms.shortest_paths import (
     a_star,
     bellman_ford,
@@ -314,5 +315,75 @@ def shortest_johnsons(body: GraphBody) -> dict[str, Any]:
     return {
         "distances": _json_matrix(matrix),
         "path_distance": path_distance,
+        "steps": steps,
+    }
+
+
+def _json_mst_edges(edges: list[tuple]) -> list[dict[str, Any]]:
+    return [
+        {"u": u, "v": v, "weight": weight}
+        for u, v, weight in edges
+    ]
+
+
+@router.post("/api/mst/kruskals")
+def mst_kruskals(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, directed=False, weighted=True)
+    steps: list[dict[str, Any]] = []
+    try:
+        edges, total = kruskals(graph, record_steps=steps)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "edges": _json_mst_edges(edges),
+        "total_weight": total,
+        "steps": steps,
+    }
+
+
+@router.post("/api/mst/prims")
+def mst_prims(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, directed=False, weighted=True)
+    steps: list[dict[str, Any]] = []
+    try:
+        edges, total = prims(graph, start=body.start, record_steps=steps)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "edges": _json_mst_edges(edges),
+        "total_weight": total,
+        "steps": steps,
+    }
+
+
+@router.post("/api/mst/compare")
+def mst_compare(body: GraphBody) -> dict[str, Any]:
+    graph = _build_graph(body, directed=False, weighted=True)
+    steps: list[dict[str, Any]] = []
+    try:
+        result = compare_mst_algorithms(graph, record_steps=steps)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except AssertionError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return {
+        "kruskals": {
+            "edges": _json_mst_edges(result["kruskals"]["edges"]),
+            "total_weight": result["kruskals"]["total_weight"],
+            "time_ms": result["kruskals"]["time_ms"],
+            "steps": result["kruskals"]["steps"],
+        },
+        "prims": {
+            "edges": _json_mst_edges(result["prims"]["edges"]),
+            "total_weight": result["prims"]["total_weight"],
+            "time_ms": result["prims"]["time_ms"],
+            "steps": result["prims"]["steps"],
+        },
+        "total_weight": result["total_weight"],
+        "faster": result["faster"],
+        "note": result["note"],
         "steps": steps,
     }

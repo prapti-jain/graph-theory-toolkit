@@ -1,5 +1,6 @@
 """Algorithm package exports."""
 
+from .mst import compare_mst_algorithms, kruskals, prims
 from .shortest_paths import (
     a_star,
     bellman_ford,
@@ -20,6 +21,7 @@ from .traversal import (
     tarjan_scc,
     topological_sort,
 )
+from .union_find import UnionFind
 
 __all__ = [
     "bfs",
@@ -38,4 +40,8 @@ __all__ = [
     "johnsons",
     "reconstruct_path",
     "euclidean_heuristic",
+    "UnionFind",
+    "kruskals",
+    "prims",
+    "compare_mst_algorithms",
 ]
