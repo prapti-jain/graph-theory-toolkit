@@ -250,6 +250,57 @@ def fit_time_vs_term_values(
     }
 
 
+def fit_ford_fulkerson_work_terms(
+    sizes: Sequence[float],
+    edges_list: Sequence[float],
+    times: Sequence[float],
+    paths_found: Sequence[float],
+) -> dict[str, Any]:
+    """Compare Edmonds–Karp runtime to worst-case vs actual-work terms.
+
+    Fits ``T`` against:
+
+    * ``V · E²`` — textbook worst-case bound (rarely approached on sparse
+      random digraphs), and
+    * ``paths_found · E`` — observed work: each augmenting path triggers a
+      BFS over the residual graph in ``O(E)``, so total work scales with the
+      *actual* number of augmentations times ``E``, not with ``V · E``.
+
+    Returns both R² scores and a report line of the form::
+
+        ford_fulkerson: fit vs V*E^2 (worst-case) = R^2=… [WEAK/MATCH],
+        fit vs paths_found*E (actual work) = R^2=… [WEAK/MATCH]
+    """
+    if len(paths_found) != len(sizes):
+        raise ValueError("paths_found must align with sizes/edges/times")
+
+    worst = fit_against_graph_terms(
+        sizes, edges_list, times, graph_term_fn("O(V E^2)")
+    )
+    actual_terms = [
+        float(paths) * float(edges)
+        for paths, edges in zip(paths_found, edges_list)
+    ]
+    actual = fit_time_vs_term_values(actual_terms, times)
+
+    def _label(fit: dict[str, Any]) -> str:
+        return "MATCH" if fit.get("match") else "WEAK"
+
+    report = (
+        f"ford_fulkerson: fit vs V*E^2 (worst-case) = "
+        f"R^2={worst['r_squared']:.2f} [{_label(worst)}], "
+        f"fit vs paths_found*E (actual work) = "
+        f"R^2={actual['r_squared']:.2f} [{_label(actual)}]"
+    )
+    return {
+        "worst_case_VE2": worst,
+        "actual_paths_E": actual,
+        "paths_found": [float(p) for p in paths_found],
+        "paths_times_E": actual_terms,
+        "report": report,
+    }
+
+
 def _graph_term_catalog() -> dict[str, TermFn]:
     def t_n(v: float, e: float) -> float:
         return v

@@ -37,6 +37,7 @@ from benchmarks.benchmark import (
     evaluate_claim,
     fit_against_graph_terms,
     fit_complexity_curve,
+    fit_ford_fulkerson_work_terms,
     graph_term_fn,
     predict_curve,
     run_benchmark,
@@ -47,8 +48,9 @@ from graph_core.graph import Graph
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
 # Algorithms where pure power-of-n fits are especially misleading; report
-# side-by-side n-power vs graph-term R² for these.
-GRAPH_TERM_REPORT_ALGOS = {"dijkstra", "kruskals", "ford_fulkerson"}
+# side-by-side n-power vs graph-term R² for these (ford_fulkerson has its
+# own dual V*E^2 vs paths_found*E report).
+GRAPH_TERM_REPORT_ALGOS = {"dijkstra", "kruskals"}
 
 CLAIMED_TERM_LABEL = {
     "O(E log V)": "E*log(V)",
@@ -284,19 +286,33 @@ def _run_case(
     claim = evaluate_claim(fit, claimed)
 
     term_fit: dict[str, Any] | None = None
+    flow_work_fit: dict[str, Any] | None = None
     report_line: str
-    if name in GRAPH_TERM_REPORT_ALGOS:
+    if name == "ford_fulkerson":
+        paths = [float(n["augmenting_paths"]) for n in flow_notes]
+        # Persist path counts on the timed points for JSON consumers.
+        for row, note in zip(points, flow_notes):
+            row["augmenting_paths"] = note["augmenting_paths"]
+            row["paths_times_E"] = (
+                note["augmenting_paths"] * note["num_edges"]
+            )
+        flow_work_fit = fit_ford_fulkerson_work_terms(
+            sizes, edges, times, paths
+        )
+        report_line = flow_work_fit["report"]
+        print(f"  -> {report_line}")
+        print(
+            "  -> explanation: V*E^2 is the worst-case Edmonds–Karp bound; "
+            "paths_found*E tracks observed BFS work (one O(E) search per "
+            "augmentation). Sparse random digraphs usually have far fewer "
+            "augmentations than V*E."
+        )
+    elif name in GRAPH_TERM_REPORT_ALGOS:
         term_fit = fit_against_graph_terms(
             sizes, edges, times, graph_term_fn(claimed)
         )
         report_line = _side_by_side_report(name, claimed, fit, term_fit)
         print(f"  -> {report_line}")
-        if name == "ford_fulkerson":
-            print(
-                "  -> explanation: claimed O(V*E^2) is worst-case; on these "
-                "sparse random digraphs the number of augmenting paths is "
-                "far below V*E, so wall-clock growth need not track V*E^2."
-            )
     else:
         status = "MATCH" if claim["match"] else "MISMATCH"
         report_line = (
@@ -321,11 +337,13 @@ def _run_case(
     }
     if term_fit is not None:
         result["graph_term_fit"] = term_fit
+    if flow_work_fit is not None:
+        result["flow_work_fit"] = flow_work_fit
     if flow_notes:
         result["flow_augmentation_notes"] = flow_notes
         result["flow_bound_comment"] = (
-            "O(V*E^2) is a worst-case bound; random sparse graphs rarely "
-            "approach it. Compare augmenting_paths to worst_case_VE (= V*E)."
+            "O(V*E^2) is a worst-case bound; compare R^2 of V*E^2 vs "
+            "paths_found*E (actual augmenting-path work)."
         )
     return result
 
