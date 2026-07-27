@@ -1,0 +1,44 @@
+.results-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border);
+}
+
+.results-panel--empty .muted {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.results-panel h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.results-panel__lines {
+  margin: 0;
+  padding-left: 1.05rem;
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.results-panel__lines li {
+  margin-bottom: 0.2rem;
+}
+
+.results-panel__chart {
+  margin-top: 0.35rem;
+}
+
+.results-panel__chart-frame {
+  height: 160px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0c1016;
+  padding: 0.35rem 0.25rem 0.15rem;
+}

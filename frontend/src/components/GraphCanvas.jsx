@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { DataSet, Network } from 'vis-network/standalone'
+import {
+  EDGE_ROLE_COLORS,
+  NODE_ROLE_COLORS,
+} from '../utils/highlights'
 import './GraphCanvas.css'
 
 const COLORS = {
@@ -15,23 +19,14 @@ const COLORS = {
 
 /**
  * Vis-network canvas for interactive graph rendering.
- *
- * @param {{
- *   nodes: Array<{id: string|number, label?: string, x?: number, y?: number}>,
- *   edges: Array<{id?: string|number, from: string|number, to: string|number, weight?: number, directed?: boolean}>,
- *   highlightedNodes?: Iterable<string|number>|Set<string|number>,
- *   highlightedEdges?: Iterable<string|number>|Set<string|number>,
- *   directed?: boolean,
- *   weighted?: boolean,
- *   onNodeClick?: (nodeId: string|number) => void,
- *   onEdgeClick?: (edgeId: string|number) => void,
- * }} props
  */
 export default function GraphCanvas({
   nodes = [],
   edges = [],
   highlightedNodes,
   highlightedEdges,
+  nodeHighlightRoles = {},
+  edgeHighlightRoles = {},
   directed = false,
   weighted = false,
   onNodeClick,
@@ -41,6 +36,7 @@ export default function GraphCanvas({
   const networkRef = useRef(null)
   const nodesDataRef = useRef(null)
   const edgesDataRef = useRef(null)
+  const structureKeyRef = useRef('')
   const onNodeClickRef = useRef(onNodeClick)
   const onEdgeClickRef = useRef(onEdgeClick)
 
@@ -58,15 +54,29 @@ export default function GraphCanvas({
     [JSON.stringify(highlightedEdges ? [...highlightedEdges].map(String).sort() : [])],
   )
 
-  // Keep latest graph props in refs so StrictMode remount can re-hydrate.
-  const graphRef = useRef({
-    nodes,
-    edges,
-    directed,
-    weighted,
-    highlightNodeSet,
-    highlightEdgeSet,
-  })
+  const rolesKey = useMemo(
+    () =>
+      JSON.stringify({
+        n: nodeHighlightRoles,
+        e: edgeHighlightRoles,
+        hn: [...highlightNodeSet].sort(),
+        he: [...highlightEdgeSet].sort(),
+      }),
+    [nodeHighlightRoles, edgeHighlightRoles, highlightNodeSet, highlightEdgeSet],
+  )
+
+  const structureKey = useMemo(
+    () =>
+      JSON.stringify({
+        directed,
+        weighted,
+        nodes: nodes.map((n) => [n.id, n.label, n.x, n.y]),
+        edges: edges.map((e) => [e.id, e.from, e.to, e.weight, e.directed]),
+      }),
+    [nodes, edges, directed, weighted],
+  )
+
+  const graphRef = useRef({})
   graphRef.current = {
     nodes,
     edges,
@@ -74,35 +84,31 @@ export default function GraphCanvas({
     weighted,
     highlightNodeSet,
     highlightEdgeSet,
+    nodeHighlightRoles,
+    edgeHighlightRoles,
   }
 
-  const applyGraphToNetwork = (payload) => {
-    if (!nodesDataRef.current || !edgesDataRef.current || !networkRef.current) {
-      return
-    }
-
+  const buildVisNodes = (payload) => {
     const {
       nodes: nextNodes,
-      edges: nextEdges,
-      directed: isDirected,
-      weighted: isWeighted,
       highlightNodeSet: hiNodes,
-      highlightEdgeSet: hiEdges,
+      nodeHighlightRoles: roles,
     } = payload
-
-    const visNodes = nextNodes.map((n) => {
+    return nextNodes.map((n) => {
       const id = n.id
-      const isHi = hiNodes.has(String(id))
+      const role = roles?.[String(id)]
+      const isHi = Boolean(role) || hiNodes.has(String(id))
+      const roleColor = role ? NODE_ROLE_COLORS[role] : null
       const item = {
         id,
         label: n.label != null ? String(n.label) : String(id),
         color: isHi
           ? {
-              background: COLORS.nodeHighlight,
-              border: COLORS.nodeHighlightBorder,
+              background: roleColor?.background || COLORS.nodeHighlight,
+              border: roleColor?.border || COLORS.nodeHighlightBorder,
               highlight: {
-                background: COLORS.nodeHighlight,
-                border: COLORS.nodeHighlightBorder,
+                background: roleColor?.background || COLORS.nodeHighlight,
+                border: roleColor?.border || COLORS.nodeHighlightBorder,
               },
             }
           : {
@@ -117,20 +123,34 @@ export default function GraphCanvas({
                 border: '#c5d4e8',
               },
             },
+        borderWidth: role === 'current' ? 3 : 2,
+        size: role === 'current' ? 22 : 18,
       }
       if (typeof n.x === 'number') item.x = n.x
       if (typeof n.y === 'number') item.y = n.y
       return item
     })
+  }
 
-    const nodeIds = new Set(visNodes.map((n) => n.id))
-    const visEdges = nextEdges
+  const buildVisEdges = (payload) => {
+    const {
+      edges: nextEdges,
+      directed: isDirected,
+      weighted: isWeighted,
+      highlightEdgeSet: hiEdges,
+      edgeHighlightRoles: roles,
+      nodes: nextNodes,
+    } = payload
+    const nodeIds = new Set(nextNodes.map((n) => n.id))
+    return nextEdges
       .filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to))
       .map((e, index) => {
         const id = e.id != null ? e.id : `e-${e.from}-${e.to}-${index}`
         const edgeDirected = e.directed != null ? Boolean(e.directed) : isDirected
         const showWeight = isWeighted || e.weight != null
-        const isHi = hiEdges.has(String(id))
+        const role = roles?.[String(id)]
+        const isHi = Boolean(role) || hiEdges.has(String(id))
+        const roleStyle = role ? EDGE_ROLE_COLORS[role] : null
         return {
           id,
           from: e.from,
@@ -141,31 +161,43 @@ export default function GraphCanvas({
             : undefined,
           color: isHi
             ? {
-                color: COLORS.edgeHighlight,
-                highlight: COLORS.edgeHighlight,
-                hover: COLORS.edgeHighlight,
+                color: roleStyle?.color || COLORS.edgeHighlight,
+                highlight: roleStyle?.color || COLORS.edgeHighlight,
+                hover: roleStyle?.color || COLORS.edgeHighlight,
               }
             : {
                 color: COLORS.edge,
                 highlight: COLORS.edgeHighlight,
                 hover: '#a8bdd4',
               },
-          width: isHi ? 2.8 : 1.8,
+          width: isHi ? roleStyle?.width || 2.8 : 1.8,
         }
       })
+  }
 
-    // Debug: verify payload shape right before DataSet write.
-    console.log('[GraphCanvas] applying to vis-network', {
+  const resizeNetwork = () => {
+    if (!networkRef.current || !containerRef.current) return
+    const width = containerRef.current.clientWidth || 800
+    const height = Math.max(containerRef.current.clientHeight || 0, 600)
+    networkRef.current.setSize(`${width}px`, `${height}px`)
+    networkRef.current.redraw()
+  }
+
+  const applyStructure = (payload, { fit = true } = {}) => {
+    if (!nodesDataRef.current || !edgesDataRef.current || !networkRef.current) return
+
+    const visNodes = buildVisNodes(payload)
+    const visEdges = buildVisEdges(payload)
+
+    console.log('[GraphCanvas] structure update', {
       nodeCount: visNodes.length,
       edgeCount: visEdges.length,
-      nodes: visNodes,
-      edges: visEdges,
-      containerSize: containerRef.current
-        ? {
-            width: containerRef.current.clientWidth,
-            height: containerRef.current.clientHeight,
-          }
-        : null,
+      sampleNodes: visNodes.slice(0, 3),
+      sampleEdges: visEdges.slice(0, 3),
+      containerSize: {
+        width: containerRef.current?.clientWidth,
+        height: containerRef.current?.clientHeight,
+      },
     })
 
     nodesDataRef.current.clear()
@@ -173,31 +205,35 @@ export default function GraphCanvas({
     if (visNodes.length) nodesDataRef.current.add(visNodes)
     if (visEdges.length) edgesDataRef.current.add(visEdges)
 
-    const network = networkRef.current
-    const width = containerRef.current?.clientWidth || 800
-    const height = Math.max(containerRef.current?.clientHeight || 0, 600)
-    network.setSize(`${width}px`, `${height}px`)
-    network.redraw()
-
-    if (visNodes.length > 0) {
-      network.stabilize(100)
-      network.once('stabilizationIterationsDone', () => {
-        network.fit({
-          animation: { duration: 250, easingFunction: 'easeInOutQuad' },
+    resizeNetwork()
+    if (fit && visNodes.length > 0) {
+      networkRef.current.stabilize(80)
+      networkRef.current.once('stabilizationIterationsDone', () => {
+        networkRef.current?.fit({
+          animation: { duration: 220, easingFunction: 'easeInOutQuad' },
         })
       })
     }
   }
 
-  // Create Network once (re-create safely under React StrictMode).
+  const applyHighlightsOnly = (payload) => {
+    if (!nodesDataRef.current || !edgesDataRef.current || !networkRef.current) return
+    const visNodes = buildVisNodes(payload)
+    const visEdges = buildVisEdges(payload)
+    // Update in place — avoids layout jumps during animation.
+    if (visNodes.length) nodesDataRef.current.update(visNodes)
+    if (visEdges.length) edgesDataRef.current.update(visEdges)
+    networkRef.current.redraw()
+  }
+
   useEffect(() => {
     const container = containerRef.current
     if (!container) return undefined
 
     nodesDataRef.current = new DataSet([])
     edgesDataRef.current = new DataSet([])
+    structureKeyRef.current = ''
 
-    console.log('[GraphCanvas] creating Network instance')
     networkRef.current = new Network(
       container,
       {
@@ -226,7 +262,7 @@ export default function GraphCanvas({
             springConstant: 0.07,
             avoidOverlap: 0.5,
           },
-          stabilization: { iterations: 120, fit: true },
+          stabilization: { iterations: 100, fit: true },
         },
         nodes: {
           shape: 'dot',
@@ -268,19 +304,12 @@ export default function GraphCanvas({
     }
     networkRef.current.on('click', onClick)
 
-    // Re-apply current props after create (covers StrictMode remount).
-    applyGraphToNetwork(graphRef.current)
+    structureKeyRef.current = structureKey
+    applyStructure(graphRef.current, { fit: true })
 
-    // If layout was still settling, resize once more on next frame.
     const raf = requestAnimationFrame(() => {
-      if (!networkRef.current || !containerRef.current) return
-      const width = containerRef.current.clientWidth || 800
-      const height = Math.max(containerRef.current.clientHeight || 0, 600)
-      networkRef.current.setSize(`${width}px`, `${height}px`)
-      networkRef.current.redraw()
-      if (graphRef.current.nodes.length > 0) {
-        networkRef.current.fit()
-      }
+      resizeNetwork()
+      if (graphRef.current.nodes.length > 0) networkRef.current?.fit()
     })
 
     return () => {
@@ -294,17 +323,21 @@ export default function GraphCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Sync whenever graph props change.
+  // Structure changes (new graph) → full reload + layout.
   useEffect(() => {
-    applyGraphToNetwork({
-      nodes,
-      edges,
-      directed,
-      weighted,
-      highlightNodeSet,
-      highlightEdgeSet,
-    })
-  }, [nodes, edges, directed, weighted, highlightNodeSet, highlightEdgeSet])
+    if (!networkRef.current) return
+    if (structureKeyRef.current === structureKey) return
+    structureKeyRef.current = structureKey
+    applyStructure(graphRef.current, { fit: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [structureKey])
+
+  // Highlight-only changes → color updates, no re-layout.
+  useEffect(() => {
+    if (!networkRef.current) return
+    applyHighlightsOnly(graphRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rolesKey])
 
   return (
     <div className="graph-canvas">
@@ -321,9 +354,7 @@ export default function GraphCanvas({
 
 function toIdSet(value) {
   if (!value) return new Set()
-  if (value instanceof Set) {
-    return new Set([...value].map(String))
-  }
+  if (value instanceof Set) return new Set([...value].map(String))
   return new Set([...value].map(String))
 }
 

@@ -103,7 +103,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(260px, 320px) 1fr;
+  grid-template-columns: minmax(240px, 300px) 1fr minmax(260px, 320px);
 }
 
 .shell__main {
@@ -114,6 +114,82 @@
   gap: 0.75rem;
   padding: 0.9rem 1rem 1rem;
   height: calc(100vh - 64px);
+}
+
+.shell__side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  height: calc(100vh - 64px);
+  padding: 1rem 0.95rem;
+  overflow: auto;
+  background: linear-gradient(180deg, #161d27 0%, #121820 100%);
+  border-left: 1px solid var(--border);
+}
+
+.side-error {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(168, 62, 62, 0.15);
+  border: 1px solid rgba(196, 90, 90, 0.45);
+  color: #f0b4b4;
+  font-size: 0.78rem;
+}
+
+.legend {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.legend ul {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 1px solid transparent;
+}
+
+.swatch--current {
+  background: #d4a84b;
+  border-color: #f0d9a0;
+}
+
+.swatch--visited {
+  background: #3d5f8a;
+  border-color: #7ea0c8;
+}
+
+.swatch--path {
+  background: #4faf7a;
+  border-color: #a6e3c0;
+}
+
+.swatch--mst {
+  background: #4ec4a0;
+  border-color: #9fd6c4;
+}
+
+.swatch--result {
+  background: #c45c6a;
+  border-color: #e8a8b2;
 }
 
 .canvas-toolbar {
@@ -152,19 +228,34 @@
   min-height: 600px;
 }
 
+@media (max-width: 1100px) {
+  .shell__body {
+    grid-template-columns: minmax(220px, 280px) 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .shell__side {
+    grid-column: 1 / -1;
+    height: auto;
+    max-height: 42vh;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .shell__main {
+    height: auto;
+    min-height: 52vh;
+  }
+}
+
 @media (max-width: 860px) {
   .shell__body {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
   }
 
   .input-panel {
     border-right: 0;
     border-bottom: 1px solid var(--border);
-    max-height: 46vh;
-  }
-
-  .shell__main {
-    min-height: 54vh;
+    max-height: 40vh;
   }
 }
