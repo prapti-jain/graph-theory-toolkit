@@ -1,0 +1,1023 @@
+{
+  "suite": "graph-theory-toolkit-benchmarks",
+  "results": [
+    {
+      "name": "bfs",
+      "claimed": "O(V+E)",
+      "candidates": [
+        "O(n)",
+        "O(V+E)",
+        "O(n log n)",
+        "O(E log V)",
+        "O(n^2)"
+      ],
+      "sizes": [
+        50,
+        100,
+        200,
+        400,
+        800,
+        1600
+      ],
+      "points": [
+        {
+          "size": 50,
+          "mean_time": 2.2333328767369192e-05,
+          "median_time": 2.0415987819433212e-05,
+          "std_time": 3.6625154388687864e-06,
+          "num_edges": 150,
+          "high_variance": false,
+          "samples": [
+            2.745899837464094e-05,
+            2.0415987819433212e-05,
+            1.912500010803342e-05
+          ]
+        },
+        {
+          "size": 100,
+          "mean_time": 4.1360986263801656e-05,
+          "median_time": 4.033400909975171e-05,
+          "std_time": 1.9439736602639855e-06,
+          "num_edges": 331,
+          "high_variance": false,
+          "samples": [
+            4.4082989916205406e-05,
+            4.033400909975171e-05,
+            3.9665959775447845e-05
+          ]
+        },
+        {
+          "size": 200,
+          "mean_time": 7.243068345511953e-05,
+          "median_time": 7.162499241530895e-05,
+          "std_time": 1.601794947565862e-06,
+          "num_edges": 607,
+          "high_variance": false,
+          "samples": [
+            7.466704118996859e-05,
+            7.162499241530895e-05,
+            7.100001676008105e-05
+          ]
+        },
+        {
+          "size": 400,
+          "mean_time": 0.000169888682042559,
+          "median_time": 0.00016716704703867435,
+          "std_time": 6.062901121799221e-06,
+          "num_edges": 1184,
+          "high_variance": false,
+          "samples": [
+            0.00017829099670052528,
+            0.00016716704703867435,
+            0.00016420800238847733
+          ]
+        },
+        {
+          "size": 800,
+          "mean_time": 0.00037790301333492,
+          "median_time": 0.0003737090155482292,
+          "std_time": 1.2403056975832297e-05,
+          "num_edges": 2427,
+          "high_variance": false,
+          "samples": [
+            0.00039474997902289033,
+            0.0003652500454336405,
+            0.0003737090155482292
+          ]
+        },
+        {
+          "size": 1600,
+          "mean_time": 0.0007704583501132826,
+          "median_time": 0.0007646669982932508,
+          "std_time": 3.26628615450211e-05,
+          "num_edges": 4748,
+          "high_variance": false,
+          "samples": [
+            0.0008130420465022326,
+            0.0007646669982932508,
+            0.0007336660055443645
+          ]
+        }
+      ],
+      "fit": {
+        "best_fit": "O(E log V)",
+        "best_residual": 6.513197273960425e-10,
+        "fits": {
+          "O(n)": {
+            "param": 4.7553117814563637e-07,
+            "residual": 1.0663452088544747e-09,
+            "rmse": 1.3331324070614509e-05
+          },
+          "O(V+E)": {
+            "param": 1.1941969167634004e-07,
+            "residual": 1.2582141456429982e-09,
+            "rmse": 1.4481103466489229e-05
+          },
+          "O(n log n)": {
+            "param": 6.639504391707228e-08,
+            "residual": 1.0224966415942517e-09,
+            "rmse": 1.3054352030352762e-05
+          },
+          "O(E log V)": {
+            "param": 2.229261220313846e-08,
+            "residual": 6.513197273960425e-10,
+            "rmse": 1.0418890915032195e-05
+          },
+          "O(n^2)": {
+            "param": 3.2111839746569467e-10,
+            "residual": 5.189442461872881e-08,
+            "rmse": 9.30003804819536e-05
+          }
+        },
+        "empirical_exponent": 1.0384906073799494,
+        "loglog_intercept": -14.873040994784208,
+        "empirical_label": "O(n^1.04)"
+      },
+      "claim": {
+        "claimed": "O(V+E)",
+        "match": false,
+        "best_fit": "O(E log V)",
+        "empirical_label": "O(n^1.04)",
+        "claimed_residual": 1.2582141456429982e-09,
+        "best_residual": 6.513197273960425e-10
+      },
+      "report": "bfs: empirical fit = O(n^1.04), best model = O(E log V), claimed O(V+E) -- MISMATCH",
+      "plot": "bfs.png"
+    },
+    {
+      "name": "dijkstra",
+      "claimed": "O(E log V)",
+      "candidates": [
+        "O(n)",
+        "O(V+E)",
+        "O(E log V)",
+        "O(E log E)",
+        "O(n log n)",
+        "O(n^2)"
+      ],
+      "sizes": [
+        50,
+        100,
+        200,
+        400,
+        800,
+        1600
+      ],
+      "points": [
+        {
+          "size": 50,
+          "mean_time": 0.00010607519652694464,
+          "median_time": 9.950000094249845e-05,
+          "std_time": 1.3538248506195861e-05,
+          "num_edges": 137,
+          "high_variance": false,
+          "samples": [
+            0.00013266695896163583,
+            0.00010395800927653909,
+            9.950000094249845e-05,
+            9.795901132747531e-05,
+            9.629200212657452e-05
+          ]
+        },
+        {
+          "size": 100,
+          "mean_time": 0.00022209981689229606,
+          "median_time": 0.00021879200357943773,
+          "std_time": 1.0036917510063287e-05,
+          "num_edges": 300,
+          "high_variance": false,
+          "samples": [
+            0.00024170801043510437,
+            0.00022029102547094226,
+            0.00021879200357943773,
+            0.00021487503545358777,
+            0.00021483300952240825
+          ]
+        },
+        {
+          "size": 200,
+          "mean_time": 0.00045422537950798867,
+          "median_time": 0.0004580839886330068,
+          "std_time": 9.624527707162384e-06,
+          "num_edges": 586,
+          "high_variance": false,
+          "samples": [
+            0.00046129198744893074,
+            0.0004430839908309281,
+            0.0004426249652169645,
+            0.00046604196541011333,
+            0.0004580839886330068
+          ]
+        },
+        {
+          "size": 400,
+          "mean_time": 0.0010474082082509995,
+          "median_time": 0.0010111669544130564,
+          "std_time": 7.580301317753314e-05,
+          "num_edges": 1231,
+          "high_variance": false,
+          "samples": [
+            0.0011985410237684846,
+            0.0010197500232607126,
+            0.001005541009362787,
+            0.0010111669544130564,
+            0.0010020420304499567
+          ]
+        },
+        {
+          "size": 800,
+          "mean_time": 0.0023612498072907327,
+          "median_time": 0.002353832998778671,
+          "std_time": 0.00010075949636925501,
+          "num_edges": 2390,
+          "high_variance": false,
+          "samples": [
+            0.0024609999964013696,
+            0.0024894580128602684,
+            0.002353832998778671,
+            0.002250417019240558,
+            0.002251541009172797
+          ]
+        },
+        {
+          "size": 1600,
+          "mean_time": 0.00955027521122247,
+          "median_time": 0.004837542015593499,
+          "std_time": 0.009489555175262235,
+          "num_edges": 4884,
+          "high_variance": true,
+          "samples": [
+            0.02852400002302602,
+            0.004837542015593499,
+            0.004604666959494352,
+            0.004577167041134089,
+            0.005208000016864389
+          ]
+        }
+      ],
+      "fit": {
+        "best_fit": "O(n^2)",
+        "best_residual": 3.395014118969049e-07,
+        "fits": {
+          "O(n)": {
+            "param": 5.18879480864648e-06,
+            "residual": 6.270465968820884e-06,
+            "rmse": 0.0010222903997740306
+          },
+          "O(V+E)": {
+            "param": 1.2862047470784035e-06,
+            "residual": 6.015872890107433e-06,
+            "rmse": 0.001001321867175871
+          },
+          "O(E log V)": {
+            "param": 2.4159529606646316e-07,
+            "residual": 3.5994335153897312e-06,
+            "rmse": 0.0007745357228032084
+          },
+          "O(E log E)": {
+            "param": 2.089251368018644e-07,
+            "residual": 3.83843877061063e-06,
+            "rmse": 0.0007998373554053171
+          },
+          "O(n log n)": {
+            "param": 7.339087033360425e-07,
+            "residual": 3.856691166147957e-06,
+            "rmse": 0.0008017367778920083
+          },
+          "O(n^2)": {
+            "param": 3.740522359458059e-09,
+            "residual": 3.395014118969049e-07,
+            "rmse": 0.0002378730095018856
+          }
+        },
+        "empirical_exponent": 1.2542305874520032,
+        "loglog_intercept": -14.216969748423617,
+        "empirical_label": "O(n^1.25)"
+      },
+      "claim": {
+        "claimed": "O(E log V)",
+        "match": false,
+        "best_fit": "O(n^2)",
+        "empirical_label": "O(n^1.25)",
+        "claimed_residual": 3.5994335153897312e-06,
+        "best_residual": 3.395014118969049e-07
+      },
+      "report": "dijkstra: fit vs n = O(n^1.25) [MISLEADING], fit vs E*log(V) = R^2=0.96 [MATCH]",
+      "plot": "dijkstra.png",
+      "graph_term_fit": {
+        "terms": [
+          773.2082979991372,
+          1993.1568569324172,
+          4479.299727207988,
+          10640.586969612687,
+          23048.816293561595,
+          51984.59363085976
+        ],
+        "slope": 1.8203896689329017e-07,
+        "intercept": -0.0005289442690195238,
+        "r_squared": 0.9604473376317807,
+        "residual": 2.6372336427300486e-06,
+        "match": true
+      }
+    },
+    {
+      "name": "kruskals",
+      "claimed": "O(E log E)",
+      "candidates": [
+        "O(n)",
+        "O(V+E)",
+        "O(E log V)",
+        "O(E log E)",
+        "O(n log n)",
+        "O(n^2)"
+      ],
+      "sizes": [
+        50,
+        100,
+        200,
+        400,
+        800,
+        1600
+      ],
+      "points": [
+        {
+          "size": 50,
+          "mean_time": 0.00021538867925604185,
+          "median_time": 0.000210333033464849,
+          "std_time": 1.1717320331784566e-05,
+          "num_edges": 304,
+          "high_variance": false,
+          "samples": [
+            0.00023158302064985037,
+            0.000210333033464849,
+            0.00020424998365342617
+          ]
+        },
+        {
+          "size": 100,
+          "mean_time": 0.00047965231351554394,
+          "median_time": 0.0004725409671664238,
+          "std_time": 1.1684085113669622e-05,
+          "num_edges": 735,
+          "high_variance": false,
+          "samples": [
+            0.0004961249651387334,
+            0.0004725409671664238,
+            0.00047029100824147463
+          ]
+        },
+        {
+          "size": 200,
+          "mean_time": 0.001214374671690166,
+          "median_time": 0.0012166660162620246,
+          "std_time": 1.2033674547235851e-05,
+          "num_edges": 1635,
+          "high_variance": false,
+          "samples": [
+            0.0012278329813852906,
+            0.0012166660162620246,
+            0.0011986250174231827
+          ]
+        },
+        {
+          "size": 400,
+          "mean_time": 0.002993972312348584,
+          "median_time": 0.0028924999642185867,
+          "std_time": 0.00018120606692734108,
+          "num_edges": 3570,
+          "high_variance": false,
+          "samples": [
+            0.0028924999642185867,
+            0.002840916975401342,
+            0.0032484999974258244
+          ]
+        },
+        {
+          "size": 800,
+          "mean_time": 0.006558458340199043,
+          "median_time": 0.00636950001353398,
+          "std_time": 0.00035301461421148464,
+          "num_edges": 8040,
+          "high_variance": false,
+          "samples": [
+            0.006252749997656792,
+            0.007053125009406358,
+            0.00636950001353398
+          ]
+        },
+        {
+          "size": 1600,
+          "mean_time": 0.023357152977647882,
+          "median_time": 0.015454459004104137,
+          "std_time": 0.011394550539833556,
+          "num_edges": 17566,
+          "high_variance": true,
+          "samples": [
+            0.015146499965339899,
+            0.015454459004104137,
+            0.039470499963499606
+          ]
+        }
+      ],
+      "fit": {
+        "best_fit": "O(n^2)",
+        "best_residual": 3.701087192160298e-06,
+        "fits": {
+          "O(n)": {
+            "param": 1.2928178743146571e-05,
+            "residual": 2.8927244036413194e-05,
+            "rmse": 0.002195724786807809
+          },
+          "O(V+E)": {
+            "param": 1.117738723446753e-06,
+            "residual": 1.7802481202394056e-05,
+            "rmse": 0.0017225214658746664
+          },
+          "O(E log V)": {
+            "param": 1.708377594479374e-07,
+            "residual": 8.877845044915224e-06,
+            "rmse": 0.0012164048835890146
+          },
+          "O(E log E)": {
+            "param": 1.284428083563115e-07,
+            "residual": 9.852914737257594e-06,
+            "rmse": 0.0012814649648779318
+          },
+          "O(n log n)": {
+            "param": 1.825188010528304e-06,
+            "residual": 1.6109573109813365e-05,
+            "rmse": 0.0016385752505257611
+          },
+          "O(n^2)": {
+            "param": 9.230328706477108e-09,
+            "residual": 3.701087192160298e-06,
+            "rmse": 0.0007853966293281693
+          }
+        },
+        "empirical_exponent": 1.3264464483606484,
+        "loglog_intercept": -13.719986791222654,
+        "empirical_label": "O(n^1.33)"
+      },
+      "claim": {
+        "claimed": "O(E log E)",
+        "match": false,
+        "best_fit": "O(n^2)",
+        "empirical_label": "O(n^1.33)",
+        "claimed_residual": 9.852914737257594e-06,
+        "best_residual": 3.701087192160298e-06
+      },
+      "report": "kruskals: fit vs n = O(n^1.33) [MISLEADING], fit vs E*log(E) = R^2=0.98 [MATCH]",
+      "plot": "kruskals.png",
+      "graph_term_fit": {
+        "terms": [
+          2507.36996408685,
+          6998.37632319694,
+          17453.7474948302,
+          42132.09884133177,
+          104302.75747997299,
+          247689.34942113102
+        ],
+        "slope": 9.321125117335981e-08,
+        "intercept": -0.0007384565311221883,
+        "r_squared": 0.9801592167626828,
+        "residual": 7.881246266829406e-06,
+        "match": true
+      }
+    },
+    {
+      "name": "prims",
+      "claimed": "O(E log V)",
+      "candidates": [
+        "O(n)",
+        "O(V+E)",
+        "O(E log V)",
+        "O(E log E)",
+        "O(n log n)",
+        "O(n^2)"
+      ],
+      "sizes": [
+        50,
+        100,
+        200,
+        400,
+        800,
+        1600
+      ],
+      "points": [
+        {
+          "size": 50,
+          "mean_time": 9.91943331124882e-05,
+          "median_time": 0.00010058301268145442,
+          "std_time": 5.46395167074212e-06,
+          "num_edges": 305,
+          "high_variance": false,
+          "samples": [
+            0.00010508298873901367,
+            0.00010058301268145442,
+            9.191699791699648e-05
+          ]
+        },
+        {
+          "size": 100,
+          "mean_time": 0.0001883750082924962,
+          "median_time": 0.0001871249987743795,
+          "std_time": 3.08893681389306e-06,
+          "num_edges": 638,
+          "high_variance": false,
+          "samples": [
+            0.00019262498244643211,
+            0.000185375043656677,
+            0.0001871249987743795
+          ]
+        },
+        {
+          "size": 200,
+          "mean_time": 0.00047131899433831376,
+          "median_time": 0.0004696659743785858,
+          "std_time": 3.3886275173539173e-06,
+          "num_edges": 1612,
+          "high_variance": false,
+          "samples": [
+            0.0004760409938171506,
+            0.0004696659743785858,
+            0.0004682500148192048
+          ]
+        },
+        {
+          "size": 400,
+          "mean_time": 0.001211082989660402,
+          "median_time": 0.0011839999933727086,
+          "std_time": 4.6453035304956675e-05,
+          "num_edges": 3594,
+          "high_variance": false,
+          "samples": [
+            0.0012764579732902348,
+            0.0011839999933727086,
+            0.001172791002318263
+          ]
+        },
+        {
+          "size": 800,
+          "mean_time": 0.0032956526653530696,
+          "median_time": 0.0032083329861052334,
+          "std_time": 0.0002063814646083468,
+          "num_edges": 7962,
+          "high_variance": false,
+          "samples": [
+            0.0030981249874457717,
+            0.003580500022508204,
+            0.0032083329861052334
+          ]
+        },
+        {
+          "size": 1600,
+          "mean_time": 0.008029346994590014,
+          "median_time": 0.008031625009607524,
+          "std_time": 2.8317047377179006e-05,
+          "num_edges": 17708,
+          "high_variance": false,
+          "samples": [
+            0.0079935829853639,
+            0.008031625009607524,
+            0.008062832988798618
+          ]
+        }
+      ],
+      "fit": {
+        "best_fit": "O(E log V)",
+        "best_residual": 1.6716068120116333e-08,
+        "fits": {
+          "O(n)": {
+            "param": 4.713837812701297e-06,
+            "residual": 1.2392670322258518e-06,
+            "rmse": 0.00045447167719339264
+          },
+          "O(V+E)": {
+            "param": 4.04220537954676e-07,
+            "residual": 3.5599773752204214e-07,
+            "rmse": 0.00024358357139526814
+          },
+          "O(E log V)": {
+            "param": 6.138513912363828e-08,
+            "residual": 1.6716068120116333e-08,
+            "rmse": 5.278268042978418e-05
+          },
+          "O(E log E)": {
+            "param": 4.616559007258053e-08,
+            "residual": 2.9285295647916252e-08,
+            "rmse": 6.9863313748963e-05
+          },
+          "O(n log n)": {
+            "param": 6.621426944471095e-07,
+            "residual": 3.143718469011942e-07,
+            "rmse": 0.00022890021366714732
+          },
+          "O(n^2)": {
+            "param": 3.2728822445457798e-09,
+            "residual": 2.1853153595636403e-06,
+            "rmse": 0.0006035057800832897
+          }
+        },
+        "empirical_exponent": 1.2983594831377476,
+        "loglog_intercept": -14.447685099428929,
+        "empirical_label": "O(n^1.30)"
+      },
+      "claim": {
+        "claimed": "O(E log V)",
+        "match": true,
+        "best_fit": "O(E log V)",
+        "empirical_label": "O(n^1.30)",
+        "claimed_residual": 1.6716068120116333e-08,
+        "best_residual": 1.6716068120116333e-08
+      },
+      "report": "prims: empirical fit = O(n^1.30), best model = O(E log V), claimed O(E log V) -- MATCH",
+      "plot": "prims.png"
+    },
+    {
+      "name": "ford_fulkerson",
+      "claimed": "O(V E^2)",
+      "candidates": [
+        "O(V+E)",
+        "O(E log V)",
+        "O(n^2)",
+        "O(V E^2)",
+        "O(n log n)"
+      ],
+      "sizes": [
+        40,
+        60,
+        80,
+        100,
+        140,
+        180
+      ],
+      "points": [
+        {
+          "size": 40,
+          "mean_time": 0.0003583954821806401,
+          "median_time": 0.0003583954821806401,
+          "std_time": 1.9187486032024026e-05,
+          "num_edges": 202,
+          "high_variance": false,
+          "samples": [
+            0.00037758296821266413,
+            0.0003392079961486161
+          ]
+        },
+        {
+          "size": 60,
+          "mean_time": 0.00024031251086853445,
+          "median_time": 0.00024031251086853445,
+          "std_time": 1.0395509889349341e-05,
+          "num_edges": 297,
+          "high_variance": false,
+          "samples": [
+            0.0002507080207578838,
+            0.0002299170009791851
+          ]
+        },
+        {
+          "size": 80,
+          "mean_time": 0.0003860204597003758,
+          "median_time": 0.0003860204597003758,
+          "std_time": 7.395516149699688e-06,
+          "num_edges": 394,
+          "high_variance": false,
+          "samples": [
+            0.0003934159758500755,
+            0.0003786249435506761
+          ]
+        },
+        {
+          "size": 100,
+          "mean_time": 0.0003344999859109521,
+          "median_time": 0.0003344999859109521,
+          "std_time": 7.4169947765767574e-06,
+          "num_edges": 494,
+          "high_variance": false,
+          "samples": [
+            0.00034191698068752885,
+            0.00032708299113437533
+          ]
+        },
+        {
+          "size": 140,
+          "mean_time": 0.0008655210258439183,
+          "median_time": 0.0008655210258439183,
+          "std_time": 6.27289991825819e-05,
+          "num_edges": 710,
+          "high_variance": false,
+          "samples": [
+            0.0009282500250265002,
+            0.0008027920266613364
+          ]
+        },
+        {
+          "size": 180,
+          "mean_time": 0.0007238959951791912,
+          "median_time": 0.0007238959951791912,
+          "std_time": 9.520997991785407e-06,
+          "num_edges": 884,
+          "high_variance": false,
+          "samples": [
+            0.0007334169931709766,
+            0.0007143749971874058
+          ]
+        }
+      ],
+      "fit": {
+        "best_fit": "O(V+E)",
+        "best_residual": 9.922419147680126e-08,
+        "fits": {
+          "O(V+E)": {
+            "param": 7.86865150019749e-07,
+            "residual": 9.922419147680126e-08,
+            "rmse": 0.00012859768756137702
+          },
+          "O(E log V)": {
+            "param": 1.9155073520571115e-07,
+            "residual": 1.2146105796340265e-07,
+            "rmse": 0.00014227968815177768
+          },
+          "O(n^2)": {
+            "param": 2.997518294904066e-08,
+            "residual": 2.912586811891503e-07,
+            "rmse": 0.00022032501794286787
+          },
+          "O(V E^2)": {
+            "param": 6.957355264907338e-12,
+            "residual": 4.838993807347294e-07,
+            "rmse": 0.00028398925470714834
+          },
+          "O(n log n)": {
+            "param": 9.47601277010086e-07,
+            "residual": 1.3138210213196734e-07,
+            "rmse": 0.00014797640697758056
+          }
+        },
+        "empirical_exponent": 0.6846728660739316,
+        "loglog_intercept": -10.805686115277618,
+        "empirical_label": "O(n^0.68)"
+      },
+      "claim": {
+        "claimed": "O(V E^2)",
+        "match": false,
+        "best_fit": "O(V+E)",
+        "empirical_label": "O(n^0.68)",
+        "claimed_residual": 4.838993807347294e-07,
+        "best_residual": 9.922419147680126e-08
+      },
+      "report": "ford_fulkerson: fit vs n = O(n^0.68) [MISLEADING], fit vs V*E^2 = R^2=0.64 [WEAK]",
+      "plot": "ford_fulkerson.png",
+      "graph_term_fit": {
+        "terms": [
+          1632160.0,
+          5292540.0,
+          12418880.0,
+          24403600.0,
+          70574000.0,
+          140662080.0
+        ],
+        "slope": 3.678398350032601e-12,
+        "intercept": 0.00032845257613561314,
+        "r_squared": 0.6416422987411833,
+        "residual": 1.1116797612847733e-07,
+        "match": false
+      },
+      "flow_augmentation_notes": [
+        {
+          "size": 40,
+          "num_edges": 202,
+          "augmenting_paths": 22,
+          "worst_case_VE": 8080,
+          "fraction_of_worst_case": 0.0027227722772277226
+        },
+        {
+          "size": 60,
+          "num_edges": 297,
+          "augmenting_paths": 9,
+          "worst_case_VE": 17820,
+          "fraction_of_worst_case": 0.000505050505050505
+        },
+        {
+          "size": 80,
+          "num_edges": 394,
+          "augmenting_paths": 8,
+          "worst_case_VE": 31520,
+          "fraction_of_worst_case": 0.0002538071065989848
+        },
+        {
+          "size": 100,
+          "num_edges": 494,
+          "augmenting_paths": 7,
+          "worst_case_VE": 49400,
+          "fraction_of_worst_case": 0.00014170040485829958
+        },
+        {
+          "size": 140,
+          "num_edges": 710,
+          "augmenting_paths": 10,
+          "worst_case_VE": 99400,
+          "fraction_of_worst_case": 0.00010060362173038229
+        },
+        {
+          "size": 180,
+          "num_edges": 884,
+          "augmenting_paths": 9,
+          "worst_case_VE": 159120,
+          "fraction_of_worst_case": 5.656108597285068e-05
+        }
+      ],
+      "flow_bound_comment": "O(V*E^2) is a worst-case bound; random sparse graphs rarely approach it. Compare augmenting_paths to worst_case_VE (= V*E)."
+    },
+    {
+      "name": "pagerank",
+      "claimed": "O(k(V+E))",
+      "candidates": [
+        "O(n)",
+        "O(V+E)",
+        "O(k(V+E))",
+        "O(n log n)",
+        "O(n^2)"
+      ],
+      "sizes": [
+        50,
+        100,
+        200,
+        400,
+        800,
+        1200
+      ],
+      "points": [
+        {
+          "size": 50,
+          "mean_time": 0.00046970800030976534,
+          "median_time": 0.0004859580076299608,
+          "std_time": 5.739809960980699e-05,
+          "num_edges": 299,
+          "high_variance": false,
+          "samples": [
+            0.000392707996070385,
+            0.0004859580076299608,
+            0.0005304579972289503
+          ]
+        },
+        {
+          "size": 100,
+          "mean_time": 0.0007892780122347176,
+          "median_time": 0.000782625051215291,
+          "std_time": 1.3933174938736659e-05,
+          "num_edges": 658,
+          "high_variance": false,
+          "samples": [
+            0.0008086669840849936,
+            0.000782625051215291,
+            0.0007765420014038682
+          ]
+        },
+        {
+          "size": 200,
+          "mean_time": 0.001573611341882497,
+          "median_time": 0.001571291999425739,
+          "std_time": 3.7307050789914814e-06,
+          "num_edges": 1215,
+          "high_variance": false,
+          "samples": [
+            0.001578875002451241,
+            0.001571291999425739,
+            0.0015706670237705112
+          ]
+        },
+        {
+          "size": 400,
+          "mean_time": 0.0034612083109095693,
+          "median_time": 0.0033737499616108835,
+          "std_time": 0.0001507932782054861,
+          "num_edges": 2462,
+          "high_variance": false,
+          "samples": [
+            0.0036733750021085143,
+            0.00333649996900931,
+            0.0033737499616108835
+          ]
+        },
+        {
+          "size": 800,
+          "mean_time": 0.006755624994790803,
+          "median_time": 0.0066458749934099615,
+          "std_time": 0.00017154822059001857,
+          "num_edges": 4672,
+          "high_variance": false,
+          "samples": [
+            0.0066458749934099615,
+            0.00662312499480322,
+            0.006997874996159226
+          ]
+        },
+        {
+          "size": 1200,
+          "mean_time": 0.010706653003580868,
+          "median_time": 0.010645709000527859,
+          "std_time": 0.00020237007978442936,
+          "num_edges": 7322,
+          "high_variance": false,
+          "samples": [
+            0.010645709000527859,
+            0.01097929198294878,
+            0.010494958027265966
+          ]
+        }
+      ],
+      "fit": {
+        "best_fit": "O(V+E)",
+        "best_residual": 8.327183486603159e-08,
+        "fits": {
+          "O(n)": {
+            "param": 8.747700062861057e-06,
+            "residual": 1.434158487232488e-07,
+            "rmse": 0.0001546047911737369
+          },
+          "O(V+E)": {
+            "param": 1.243676792161841e-06,
+            "residual": 8.327183486603159e-08,
+            "rmse": 0.00011780763618857055
+          },
+          "O(k(V+E))": {
+            "param": 1.243676792161841e-06,
+            "residual": 8.327183486603159e-08,
+            "rmse": 0.00011780763618857055
+          },
+          "O(n log n)": {
+            "param": 1.2732213623491067e-06,
+            "residual": 3.269097654754028e-07,
+            "rmse": 0.00023342013818984672
+          },
+          "O(n^2)": {
+            "param": 8.112700438553586e-09,
+            "residual": 1.0339439220336056e-05,
+            "rmse": 0.0013127223126221362
+          }
+        },
+        "empirical_exponent": 1.000046892456982,
+        "loglog_intercept": -11.674303170181636,
+        "empirical_label": "O(n^1.00)"
+      },
+      "claim": {
+        "claimed": "O(k(V+E))",
+        "match": true,
+        "best_fit": "O(V+E)",
+        "empirical_label": "O(n^1.00)",
+        "claimed_residual": 8.327183486603159e-08,
+        "best_residual": 8.327183486603159e-08
+      },
+      "report": "pagerank: empirical fit = O(n^1.00), best model = O(V+E), claimed O(k(V+E)) -- MATCH",
+      "plot": "pagerank.png"
+    }
+  ],
+  "kruskal_vs_prim": [
+    {
+      "size": 50,
+      "kruskals_ms": 0.21538867925604185,
+      "prims_ms": 0.0991943331124882,
+      "faster": "prims"
+    },
+    {
+      "size": 100,
+      "kruskals_ms": 0.47965231351554394,
+      "prims_ms": 0.1883750082924962,
+      "faster": "prims"
+    },
+    {
+      "size": 200,
+      "kruskals_ms": 1.214374671690166,
+      "prims_ms": 0.47131899433831376,
+      "faster": "prims"
+    },
+    {
+      "size": 400,
+      "kruskals_ms": 2.993972312348584,
+      "prims_ms": 1.211082989660402,
+      "faster": "prims"
+    },
+    {
+      "size": 800,
+      "kruskals_ms": 6.558458340199043,
+      "prims_ms": 3.2956526653530696,
+      "faster": "prims"
+    },
+    {
+      "size": 1600,
+      "kruskals_ms": 23.357152977647882,
+      "prims_ms": 8.029346994590014,
+      "faster": "prims"
+    }
+  ],
+  "reports": [
+    "bfs: empirical fit = O(n^1.04), best model = O(E log V), claimed O(V+E) -- MISMATCH",
+    "dijkstra: fit vs n = O(n^1.25) [MISLEADING], fit vs E*log(V) = R^2=0.96 [MATCH]",
+    "kruskals: fit vs n = O(n^1.33) [MISLEADING], fit vs E*log(E) = R^2=0.98 [MATCH]",
+    "prims: empirical fit = O(n^1.30), best model = O(E log V), claimed O(E log V) -- MATCH",
+    "ford_fulkerson: fit vs n = O(n^0.68) [MISLEADING], fit vs V*E^2 = R^2=0.64 [WEAK]",
+    "pagerank: empirical fit = O(n^1.00), best model = O(V+E), claimed O(k(V+E)) -- MATCH"
+  ]
+}

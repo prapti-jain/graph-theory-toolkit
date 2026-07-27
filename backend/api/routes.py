@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import math
+from pathlib import Path
 from typing import Any, Hashable, Optional, Union
 
 from fastapi import APIRouter, HTTPException
@@ -39,6 +41,10 @@ from algorithms.traversal import (
 )
 from datasets.loader import load_karate_club
 from graph_core.graph import Graph
+
+BENCHMARK_RESULTS_PATH = (
+    Path(__file__).resolve().parents[1] / "benchmarks" / "results" / "benchmark_results.json"
+)
 
 router = APIRouter()
 
@@ -602,3 +608,23 @@ def dataset_karate_club() -> dict[str, Any]:
         "num_nodes": graph.num_nodes,
         "num_edges": graph.num_edges,
     }
+
+
+@router.get("/api/benchmarks/results")
+def benchmarks_results() -> dict[str, Any]:
+    if not BENCHMARK_RESULTS_PATH.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No benchmark results found. Run "
+                "`python -m benchmarks.benchmark_suite` from the backend "
+                "directory first."
+            ),
+        )
+    try:
+        return json.loads(BENCHMARK_RESULTS_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse benchmark results: {exc}",
+        ) from exc
