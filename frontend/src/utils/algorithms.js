@@ -387,7 +387,8 @@ export function formatAlgorithmResult(algorithmId, result) {
         title: 'PageRank',
         lines: [
           `Converged in ${result.iterations} iterations`,
-          topScores(result.ranks, 5, 'rank'),
+          'Ranks (highest → lowest):',
+          ...sortedScoreLines(result.ranks),
         ],
       }
     case 'betweenness':
@@ -402,9 +403,10 @@ export function formatAlgorithmResult(algorithmId, result) {
               : 'Eigenvector centrality',
         lines: [
           result.iterations != null
-            ? `Iterations: ${result.iterations}`
+            ? `Converged in ${result.iterations} iterations`
             : null,
-          topScores(result.scores || result.ranks, 5, 'score'),
+          'Scores (highest → lowest):',
+          ...sortedScoreLines(result.scores || result.ranks),
         ].filter(Boolean),
       }
     default:
@@ -412,15 +414,83 @@ export function formatAlgorithmResult(algorithmId, result) {
   }
 }
 
-function topScores(map, k, label) {
-  if (!map) return `No ${label}s`
+/**
+ * Score map for canvas scaling, or null if not a centrality result.
+ *
+ * Always returns a fresh plain object with **string** keys and numeric values.
+ * API JSON keys are strings ("33") while graph.nodes[].id is often a number (33);
+ * canonicalizing here prevents silent Map/object lookup misses in GraphCanvas.
+ */
+export function getCentralityScores(algorithmId, result) {
+  if (!result || !algorithmId) return null
+  let raw = null
+  if (algorithmId === 'pagerank') raw = result.ranks
+  else if (
+    algorithmId === 'betweenness' ||
+    algorithmId === 'closeness' ||
+    algorithmId === 'eigenvector'
+  ) {
+    raw = result.scores
+  }
+  return canonicalizeScoreMap(raw)
+}
+
+/**
+ * Coerce API ranks/scores into `{ [stringId]: number }` or null.
+ * Accepts plain objects or arrays of `[id, score]` / `{id|node, score|rank|value}`.
+ */
+export function canonicalizeScoreMap(raw) {
+  if (raw == null) return null
+  const out = {}
+
+  const add = (id, value) => {
+    if (id == null || id === '') return
+    const n = Number(value)
+    if (!Number.isFinite(n)) return
+    out[String(id)] = n
+  }
+
+  if (Array.isArray(raw)) {
+    for (const entry of raw) {
+      if (Array.isArray(entry) && entry.length >= 2) {
+        add(entry[0], entry[1])
+      } else if (entry && typeof entry === 'object') {
+        add(entry.id ?? entry.node ?? entry.vertex, entry.score ?? entry.rank ?? entry.value)
+      }
+    }
+  } else if (typeof raw === 'object') {
+    for (const [id, value] of Object.entries(raw)) {
+      add(id, value)
+    }
+  } else {
+    return null
+  }
+
+  return Object.keys(out).length ? out : null
+}
+
+export function isCentralityAlgorithm(algorithmId) {
+  return (
+    algorithmId === 'pagerank' ||
+    algorithmId === 'betweenness' ||
+    algorithmId === 'closeness' ||
+    algorithmId === 'eigenvector'
+  )
+}
+
+function sortedScoreLines(map) {
+  if (!map || typeof map !== 'object') return ['No scores']
   const ranked = Object.entries(map)
     .map(([id, v]) => [id, Number(v)])
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, k)
-  return `Top ${label}s: ${ranked
-    .map(([id, v]) => `${id}=${formatNum(v)}`)
-    .join(', ')}`
+    .filter(([, v]) => Number.isFinite(v))
+    .sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1]
+      return String(a[0]).localeCompare(String(b[0]), undefined, { numeric: true })
+    })
+  if (!ranked.length) return ['No scores']
+  return ranked.map(
+    ([id, v], i) => `${i + 1}. node ${id}: ${formatNum(v)}`,
+  )
 }
 
 function formatNum(v) {

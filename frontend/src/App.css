@@ -207,6 +207,11 @@
   border-color: #e8a8b2;
 }
 
+.swatch--centrality {
+  background: #e0b84e;
+  border-color: #f0d9a0;
+}
+
 .canvas-toolbar {
   display: flex;
   align-items: flex-end;

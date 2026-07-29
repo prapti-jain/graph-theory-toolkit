@@ -25,6 +25,8 @@
   color: var(--text);
   font-size: 0.82rem;
   line-height: 1.45;
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .results-panel__lines li {

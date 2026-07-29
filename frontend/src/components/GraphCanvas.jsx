@@ -17,6 +17,10 @@ const COLORS = {
   edgeHighlight: '#e0b84e',
 }
 
+/** Radius range used when encoding centrality via vis-network `value` scaling. */
+const SCORE_SIZE_MIN = 8
+const SCORE_SIZE_MAX = 44
+
 /**
  * Vis-network canvas for interactive graph rendering.
  */
@@ -27,6 +31,7 @@ export default function GraphCanvas({
   highlightedEdges,
   nodeHighlightRoles = {},
   edgeHighlightRoles = {},
+  nodeScores = null,
   directed = false,
   weighted = false,
   onNodeClick,
@@ -54,6 +59,55 @@ export default function GraphCanvas({
     [JSON.stringify(highlightedEdges ? [...highlightedEdges].map(String).sort() : [])],
   )
 
+  const scoreNorm = useMemo(() => {
+    const norm = normalizeScores(nodeScores)
+    const isNullish = nodeScores == null
+    const isObject = nodeScores != null && typeof nodeScores === 'object'
+    const keyCount = isObject ? Object.keys(nodeScores).length : null
+    const shape = isNullish
+      ? nodeScores === null
+        ? 'null'
+        : 'undefined'
+      : isObject
+        ? keyCount === 0
+          ? 'empty-object'
+          : 'populated-object'
+        : typeof nodeScores
+    const sampleEntries = norm
+      ? Object.entries(norm).slice(0, 3)
+      : null
+    // eslint-disable-next-line no-console
+    console.log('[centrality-scale] GraphCanvas scoreNorm', {
+      nodeScoresType: typeof nodeScores,
+      nodeScoresShape: shape,
+      nodeScoresKeyCount: keyCount,
+      nodeScoresSample:
+        isObject
+          ? JSON.stringify(Object.fromEntries(Object.entries(nodeScores).slice(0, 5)))
+          : String(nodeScores),
+      scoreNormSize: norm ? Object.keys(norm).length : 0,
+      scoreNormSample: sampleEntries,
+      scoreNormIsNull: norm == null,
+      sampleLookup: norm
+        ? {
+            asString33: lookupScore(norm, '33'),
+            asNumber33: lookupScore(norm, 33),
+          }
+        : null,
+    })
+    return norm
+  }, [nodeScores])
+  const rawScores = useMemo(() => flattenScoreMap(nodeScores), [nodeScores])
+
+  const scoresKey = useMemo(() => {
+    if (!scoreNorm) return ''
+    return Object.entries(scoreNorm)
+      .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))
+      .map(([k, v]) => `${k}:${v.toFixed(4)}`)
+      .join('|')
+  }, [scoreNorm])
+
+  // Include scoresKey so highlight ticks never re-apply without current scores.
   const rolesKey = useMemo(
     () =>
       JSON.stringify({
@@ -61,8 +115,9 @@ export default function GraphCanvas({
         e: edgeHighlightRoles,
         hn: [...highlightNodeSet].sort(),
         he: [...highlightEdgeSet].sort(),
+        s: scoresKey,
       }),
-    [nodeHighlightRoles, edgeHighlightRoles, highlightNodeSet, highlightEdgeSet],
+    [nodeHighlightRoles, edgeHighlightRoles, highlightNodeSet, highlightEdgeSet, scoresKey],
   )
 
   const structureKey = useMemo(
@@ -86,46 +141,105 @@ export default function GraphCanvas({
     highlightEdgeSet,
     nodeHighlightRoles,
     edgeHighlightRoles,
+    scoreNorm,
+    rawScores,
   }
 
-  const buildVisNodes = (payload) => {
+  const buildVisNodes = (payload, { logScores = false } = {}) => {
     const {
       nodes: nextNodes,
       highlightNodeSet: hiNodes,
       nodeHighlightRoles: roles,
+      scoreNorm: scores,
+      rawScores: raw,
     } = payload
+
     return nextNodes.map((n) => {
       const id = n.id
-      const role = roles?.[String(id)]
-      const isHi = Boolean(role) || hiNodes.has(String(id))
+      const key = String(id)
+      const role = roles?.[key] ?? roles?.[id]
+      const t = lookupScore(scores, id)
+      const hasScore = typeof t === 'number'
+      const rawScore = lookupScore(raw, id)
+      const scoreBg = hasScore ? scoreToColor(t) : null
+      const scoreBorder = hasScore ? scoreToBorder(t) : null
+
+      // vis-network encodes variable size via `value` + nodes.scaling
+      // (per-node `size` is reset by setValueRange when value is absent).
+      const value = hasScore ? t : undefined
+      const size = hasScore
+        ? SCORE_SIZE_MIN + t * (SCORE_SIZE_MAX - SCORE_SIZE_MIN)
+        : role === 'current'
+          ? 22
+          : 18
+
+      const useScoreStyle = hasScore && role !== 'current'
       const roleColor = role ? NODE_ROLE_COLORS[role] : null
+      const isHi = Boolean(role) || hiNodes.has(key) || hiNodes.has(String(id))
+
+      const background = useScoreStyle
+        ? scoreBg
+        : isHi
+          ? roleColor?.background || COLORS.nodeHighlight
+          : scoreBg || COLORS.node
+      const border = useScoreStyle
+        ? scoreBorder
+        : isHi
+          ? roleColor?.border || COLORS.nodeHighlightBorder
+          : scoreBorder || COLORS.nodeBorder
+
+      if (logScores && hasScore) {
+        // Debug: confirm scaling math runs and values reach DataSet.
+        // eslint-disable-next-line no-console
+        console.log('[centrality-scale]', {
+          nodeId: id,
+          nodeIdType: typeof id,
+          lookupKey: key,
+          rawScore,
+          normalized: Number(t.toFixed(4)),
+          value,
+          size: Number(size.toFixed(1)),
+          color: background,
+          border,
+        })
+      }
+
       const item = {
         id,
         label: n.label != null ? String(n.label) : String(id),
-        color: isHi
-          ? {
-              background: roleColor?.background || COLORS.nodeHighlight,
-              border: roleColor?.border || COLORS.nodeHighlightBorder,
-              highlight: {
-                background: roleColor?.background || COLORS.nodeHighlight,
-                border: roleColor?.border || COLORS.nodeHighlightBorder,
-              },
-            }
-          : {
-              background: COLORS.node,
-              border: COLORS.nodeBorder,
-              highlight: {
-                background: COLORS.nodeHighlight,
-                border: COLORS.nodeHighlightBorder,
-              },
-              hover: {
-                background: '#5d82b8',
-                border: '#c5d4e8',
-              },
-            },
-        borderWidth: role === 'current' ? 3 : 2,
-        size: role === 'current' ? 22 : 18,
+        title: hasScore
+          ? `score ${formatScore(rawScore)} · size≈${size.toFixed(0)}`
+          : undefined,
+        color: {
+          background,
+          border,
+          highlight: {
+            background:
+              role === 'current'
+                ? COLORS.nodeHighlight
+                : scoreBg || roleColor?.background || COLORS.nodeHighlight,
+            border:
+              role === 'current'
+                ? COLORS.nodeHighlightBorder
+                : scoreBorder || roleColor?.border || COLORS.nodeHighlightBorder,
+          },
+          hover: {
+            background: scoreBg || '#5d82b8',
+            border: scoreBorder || '#c5d4e8',
+          },
+        },
+        borderWidth: role === 'current' ? 3.5 : hasScore ? 2.6 : 2,
       }
+
+      if (hasScore) {
+        // Primary size driver for vis-network (`setValueRange` uses this).
+        item.value = value
+        // Also set size so baseSize tracks the intended radius.
+        item.size = size
+      } else {
+        item.size = size
+      }
+
       if (typeof n.x === 'number') item.x = n.x
       if (typeof n.y === 'number') item.y = n.y
       return item
@@ -187,24 +301,19 @@ export default function GraphCanvas({
   const applyStructure = (payload, { fit = true } = {}) => {
     if (!nodesDataRef.current || !edgesDataRef.current || !networkRef.current) return
 
-    const visNodes = buildVisNodes(payload)
+    const visNodes = buildVisNodes(payload, { logScores: Boolean(payload.scoreNorm) })
     const visEdges = buildVisEdges(payload)
-
-    console.log('[GraphCanvas] structure update', {
-      nodeCount: visNodes.length,
-      edgeCount: visEdges.length,
-      sampleNodes: visNodes.slice(0, 3),
-      sampleEdges: visEdges.slice(0, 3),
-      containerSize: {
-        width: containerRef.current?.clientWidth,
-        height: containerRef.current?.clientHeight,
-      },
-    })
 
     nodesDataRef.current.clear()
     edgesDataRef.current.clear()
     if (visNodes.length) nodesDataRef.current.add(visNodes)
     if (visEdges.length) edgesDataRef.current.add(visEdges)
+
+    if (payload.scoreNorm) {
+      syncNetworkNodeVisuals(networkRef.current, visNodes)
+      logDataSetSample(nodesDataRef.current, 'applyStructure')
+      logNetworkSample(networkRef.current, 'applyStructure')
+    }
 
     resizeNetwork()
     if (fit && visNodes.length > 0) {
@@ -217,13 +326,50 @@ export default function GraphCanvas({
     }
   }
 
-  const applyHighlightsOnly = (payload) => {
+  /**
+   * Force-apply node visuals. Always clear+add when scores are present so
+   * vis-network rebuilds Node options including value/size/color. Then push
+   * the same options onto live Network node instances (DataSet alone has been
+   * unreliable for centrality styling).
+   */
+  const applyNodeVisuals = (payload, { forceReplace = false, logScores = false } = {}) => {
     if (!nodesDataRef.current || !edgesDataRef.current || !networkRef.current) return
-    const visNodes = buildVisNodes(payload)
+
+    // Keep current layout when rebuilding nodes for score styling.
+    const positions = {}
+    const bodyNodes = networkRef.current.body?.nodes
+    if (bodyNodes) {
+      for (const node of Object.values(bodyNodes)) {
+        if (node?.id == null || typeof node.x !== 'number' || typeof node.y !== 'number') continue
+        positions[String(node.id)] = { x: node.x, y: node.y }
+      }
+    }
+
+    const visNodes = buildVisNodes(payload, { logScores }).map((n) => {
+      const pos = positions[String(n.id)]
+      if (!pos) return n
+      return { ...n, x: pos.x, y: pos.y }
+    })
     const visEdges = buildVisEdges(payload)
-    // Update in place — avoids layout jumps during animation.
-    if (visNodes.length) nodesDataRef.current.update(visNodes)
+    const replace = forceReplace || Boolean(payload.scoreNorm)
+
+    if (replace) {
+      nodesDataRef.current.clear()
+      if (visNodes.length) nodesDataRef.current.add(visNodes)
+    } else if (visNodes.length) {
+      nodesDataRef.current.update(visNodes)
+    }
+
     if (visEdges.length) edgesDataRef.current.update(visEdges)
+
+    // Belt-and-suspenders: write value/size/color onto live Node options.
+    syncNetworkNodeVisuals(networkRef.current, visNodes)
+
+    if (logScores) {
+      logDataSetSample(nodesDataRef.current, replace ? 'replace' : 'update')
+      logNetworkSample(networkRef.current, replace ? 'replace' : 'update')
+    }
+
     networkRef.current.redraw()
   }
 
@@ -268,6 +414,15 @@ export default function GraphCanvas({
         nodes: {
           shape: 'dot',
           size: 18,
+          // Required for centrality: size is driven by per-node `value`.
+          scaling: {
+            min: SCORE_SIZE_MIN,
+            max: SCORE_SIZE_MAX,
+            label: {
+              enabled: false,
+              drawThreshold: 1000,
+            },
+          },
           font: {
             face: 'IBM Plex Sans, Segoe UI, sans-serif',
             size: 14,
@@ -333,12 +488,28 @@ export default function GraphCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [structureKey])
 
-  // Highlight-only changes → color updates, no re-layout.
+  // Highlight + centrality score visuals. When scores exist, always rebuild
+  // nodes (forceReplace) — DataSet.update alone does not reliably keep value.
   useEffect(() => {
     if (!networkRef.current) return
-    applyHighlightsOnly(graphRef.current)
+    const hasScores = Boolean(graphRef.current.scoreNorm)
+    // eslint-disable-next-line no-console
+    console.log('[centrality-scale] visuals effect', {
+      hasScores,
+      scoresKeyLen: scoresKey.length,
+      nodeCount: graphRef.current.nodes?.length ?? 0,
+      sampleRaw: graphRef.current.rawScores
+        ? Object.fromEntries(
+            Object.entries(graphRef.current.rawScores).slice(0, 5),
+          )
+        : null,
+    })
+    applyNodeVisuals(graphRef.current, {
+      forceReplace: hasScores,
+      logScores: hasScores,
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rolesKey])
+  }, [rolesKey, scoresKey])
 
   return (
     <div className="graph-canvas">
@@ -353,6 +524,65 @@ export default function GraphCanvas({
   )
 }
 
+function logDataSetSample(dataSet, label) {
+  if (!dataSet) return
+  const all = dataSet.get()
+  const sample = all
+    .filter((n) => n.value != null || n.size != null)
+    .slice(0, 6)
+    .map((n) => ({
+      id: n.id,
+      value: n.value,
+      size: n.size,
+      bg: n.color?.background,
+    }))
+  // eslint-disable-next-line no-console
+  console.log(`[centrality-scale] DataSet after ${label}`, {
+    count: all.length,
+    sample,
+  })
+}
+
+function logNetworkSample(network, label) {
+  if (!network?.body?.nodes) return
+  const sample = Object.values(network.body.nodes)
+    .filter((n) => n && n.id != null && !String(n.id).startsWith('edgeId:'))
+    .slice(0, 6)
+    .map((n) => ({
+      id: n.id,
+      value: n.options?.value,
+      size: n.options?.size,
+      bg: n.options?.color?.background,
+    }))
+  // eslint-disable-next-line no-console
+  console.log(`[centrality-scale] Network body after ${label}`, { sample })
+}
+
+/** Push computed visuals onto live vis-network Node instances. */
+function syncNetworkNodeVisuals(network, visNodes) {
+  if (!network?.body?.nodes || !visNodes?.length) return
+  const body = network.body.nodes
+  for (const item of visNodes) {
+    const node =
+      body[item.id] ??
+      body[String(item.id)] ??
+      (Number.isFinite(Number(item.id)) ? body[Number(item.id)] : null)
+    if (!node || typeof node.setOptions !== 'function') continue
+    const opts = {
+      size: item.size,
+      color: item.color,
+      borderWidth: item.borderWidth,
+      title: item.title,
+    }
+    if (item.value != null && Number.isFinite(Number(item.value))) {
+      opts.value = Number(item.value)
+    } else {
+      opts.value = undefined
+    }
+    node.setOptions(opts)
+  }
+}
+
 function toIdSet(value) {
   if (!value) return new Set()
   if (value instanceof Set) return new Set([...value].map(String))
@@ -363,4 +593,122 @@ function formatWeight(weight) {
   const n = Number(weight)
   if (!Number.isFinite(n)) return String(weight)
   return Number.isInteger(n) ? String(n) : n.toFixed(2)
+}
+
+/**
+ * Look up a score for a graph node id, trying string/number key forms.
+ * scoreNorm / rawScores are plain objects with canonical string keys.
+ */
+function lookupScore(scores, id) {
+  if (!scores || id == null) return undefined
+  if (scores instanceof Map) {
+    if (scores.has(id)) return scores.get(id)
+    const asString = String(id)
+    if (scores.has(asString)) return scores.get(asString)
+    if (typeof id === 'string' && /^-?\d+(\.\d+)?$/.test(id)) {
+      const asNum = Number(id)
+      if (scores.has(asNum)) return scores.get(asNum)
+    }
+    return undefined
+  }
+  if (typeof scores !== 'object') return undefined
+  if (Object.prototype.hasOwnProperty.call(scores, id)) {
+    const v = scores[id]
+    return Number.isFinite(Number(v)) ? Number(v) : undefined
+  }
+  const asString = String(id)
+  if (Object.prototype.hasOwnProperty.call(scores, asString)) {
+    const v = scores[asString]
+    return Number.isFinite(Number(v)) ? Number(v) : undefined
+  }
+  if (typeof id === 'string' && /^-?\d+$/.test(id)) {
+    const asNum = Number(id)
+    if (Object.prototype.hasOwnProperty.call(scores, asNum)) {
+      const v = scores[asNum]
+      return Number.isFinite(Number(v)) ? Number(v) : undefined
+    }
+  }
+  return undefined
+}
+
+/**
+ * Normalize centrality scores to [0, 1] for size/color mapping.
+ * @returns {Record<string, number>|null} plain object with string keys
+ */
+function normalizeScores(scores) {
+  const flat = flattenScoreMap(scores)
+  if (!flat) return null
+  const entries = Object.entries(flat)
+  if (!entries.length) return null
+  let min = Infinity
+  let max = -Infinity
+  for (const [, v] of entries) {
+    if (v < min) min = v
+    if (v > max) max = v
+  }
+  const span = max - min
+  const out = {}
+  for (const [id, v] of entries) {
+    // Always string keys — graph node ids may be numbers.
+    out[String(id)] = span > 1e-12 ? (v - min) / span : 0.5
+  }
+  return out
+}
+
+/** Flat string-key → number map (handles numeric/string API keys + arrays). */
+function flattenScoreMap(scores) {
+  if (scores == null) return null
+  const out = {}
+
+  const add = (id, value) => {
+    if (id == null || id === '') return
+    const n = Number(value)
+    if (!Number.isFinite(n)) return
+    out[String(id)] = n
+  }
+
+  if (Array.isArray(scores)) {
+    for (const entry of scores) {
+      if (Array.isArray(entry) && entry.length >= 2) add(entry[0], entry[1])
+      else if (entry && typeof entry === 'object') {
+        add(entry.id ?? entry.node ?? entry.vertex, entry.score ?? entry.rank ?? entry.value)
+      }
+    }
+  } else if (typeof scores === 'object') {
+    for (const [id, v] of Object.entries(scores)) add(id, v)
+  } else {
+    return null
+  }
+
+  return Object.keys(out).length ? out : null
+}
+
+function formatScore(v) {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return '—'
+  return n.toFixed(4)
+}
+
+/** Cool muted blue → saturated gold as score rises. */
+function scoreToColor(t) {
+  const u = clamp01(t)
+  const e = u * u
+  const r = Math.round(45 + e * (232 - 45))
+  const g = Math.round(70 + e * (186 - 70))
+  const b = Math.round(110 + e * (64 - 110))
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+function scoreToBorder(t) {
+  const u = clamp01(t)
+  const e = u * u
+  const r = Math.round(90 + e * (245 - 90))
+  const g = Math.round(120 + e * (220 - 120))
+  const b = Math.round(160 + e * (140 - 160))
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+function clamp01(t) {
+  if (!Number.isFinite(t)) return 0
+  return Math.min(1, Math.max(0, t))
 }

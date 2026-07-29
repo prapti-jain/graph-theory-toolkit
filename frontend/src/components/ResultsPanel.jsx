@@ -41,7 +41,7 @@ export default function ResultsPanel({ summary, convergenceHistory, algorithmId 
         <div className="results-panel__chart">
           <p className="section-label">PageRank convergence (L1 Δ)</p>
           <div className="results-panel__chart-frame">
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={160} minWidth={0}>
               <LineChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                 <CartesianGrid stroke="#2a3646" strokeDasharray="3 3" />
                 <XAxis
@@ -62,6 +62,7 @@ export default function ResultsPanel({ summary, convergenceHistory, algorithmId 
                     fontSize: 12,
                   }}
                   labelFormatter={(v) => `Iteration ${v}`}
+                  formatter={(value) => [Number(value).toExponential(3), 'L1 Δ']}
                 />
                 <Line
                   type="monotone"

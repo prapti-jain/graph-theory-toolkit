@@ -10,6 +10,8 @@ import {
   buildAlgorithmBody,
   findAlgorithm,
   formatAlgorithmResult,
+  getCentralityScores,
+  isCentralityAlgorithm,
   isGraphWeighted,
 } from './utils/algorithms'
 import './App.css'
@@ -49,8 +51,34 @@ function App() {
   )
 
   // Show summary once user reaches the end (or for algorithms with no steps).
+  // Centrality results + PageRank chart should appear immediately — iteration
+  // steps are not the main deliverable (scores + canvas scaling are).
   const resultsVisible =
-    Boolean(summary) && (animation.atEnd || steps.length === 0)
+    Boolean(summary) &&
+    (isCentralityAlgorithm(algorithmId) ||
+      animation.atEnd ||
+      steps.length === 0)
+
+  const nodeScores = useMemo(() => {
+    const scores = getCentralityScores(algorithmId, result)
+    // eslint-disable-next-line no-console
+    console.log('[centrality-scale] App getCentralityScores', {
+      algorithmId,
+      resultIsNull: result == null,
+      resultRanks:
+        result?.ranks != null
+          ? Object.fromEntries(Object.entries(result.ranks).slice(0, 5))
+          : result?.ranks,
+      resultScores:
+        result?.scores != null
+          ? Object.fromEntries(Object.entries(result.scores).slice(0, 5))
+          : result?.scores,
+      derivedNodeScores: scores,
+      derivedType: typeof scores,
+      derivedKeys: scores && typeof scores === 'object' ? Object.keys(scores).length : null,
+    })
+    return scores
+  }, [algorithmId, result])
 
   const handleGraphChange = useCallback((next) => {
     setGraph(next)
@@ -144,6 +172,7 @@ function App() {
             edges={graph.edges}
             directed={graph.directed}
             weighted={weighted}
+            nodeScores={nodeScores}
             highlightedNodes={animation.highlightedNodes}
             highlightedEdges={animation.highlightedEdges}
             nodeHighlightRoles={animation.nodeHighlightRoles}
@@ -190,6 +219,7 @@ function App() {
               <li><span className="swatch swatch--source-side" /> source side</li>
               <li><span className="swatch swatch--sink-side" /> sink side</li>
               <li><span className="swatch swatch--result" /> result / cut</li>
+              <li><span className="swatch swatch--centrality" /> high centrality</li>
             </ul>
           </div>
         </aside>
