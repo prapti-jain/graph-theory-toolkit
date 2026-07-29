@@ -97,6 +97,28 @@ export default function StepPlayer({
 
 function summarizeStep(step) {
   const action = step.action || 'step'
+  if (action === 'augment') {
+    const path = (step.path || [])
+      .filter(([u, v]) => !looksSynthetic(u) && !looksSynthetic(v))
+      .map(([u, v]) => `${u}→${v}`)
+      .join(', ')
+    return `augment: bottleneck ${step.bottleneck ?? '—'}; flow ${step.flow_so_far ?? '—'}; path [${path || '—'}]`
+  }
+  if (action === 'match' && step.pair) {
+    return `match: ${step.pair[0]} – ${step.pair[1]}${step.phase != null ? ` (phase ${step.phase})` : ''}`
+  }
+  if (action === 'cut_edge' && step.edge) {
+    return `cut edge: ${step.edge[0]} → ${step.edge[1]} (cap ${step.capacity ?? '—'})`
+  }
+  if ((action === 'source_side' || action === 'sink_side' || action === 'reachable_set') && step.nodes) {
+    return `${action}: {${step.nodes.join(', ')}}`
+  }
+  if (action === 'phase') {
+    return `phase ${step.phase}: +${step.augmented ?? 0} matches (size ${step.matching_size ?? '—'})`
+  }
+  if (action === 'build_flow_network') {
+    return `build flow network: L={${(step.left || []).join(', ')}} R={${(step.right || []).join(', ')}}`
+  }
   if (step.node != null && step.from == null) {
     return `${action}: node ${step.node}`
   }
@@ -113,4 +135,10 @@ function summarizeStep(step) {
     return `${action}: L1 Δ=${Number(step.l1_delta).toExponential(2)}`
   }
   return action
+}
+
+function looksSynthetic(id) {
+  if (id == null || typeof id === 'object') return true
+  const s = String(id)
+  return s.includes('__src__') || s.includes('__sink__')
 }

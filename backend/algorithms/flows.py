@@ -67,7 +67,12 @@ def min_cut(
     sink: Hashable,
     *,
     record_steps: Optional[list[dict[str, Any]]] = None,
-) -> tuple[float, list[tuple[Hashable, Hashable, float]]]:
+) -> tuple[
+    float,
+    list[tuple[Hashable, Hashable, float]],
+    list[Hashable],
+    list[Hashable],
+]:
     """Compute an s–t minimum cut from the max-flow residual graph.
 
     Approach: Run Edmonds–Karp to obtain a maximum flow and its residual
@@ -93,21 +98,20 @@ def min_cut(
     isolate a critical facility (``sink``) from the rest of a supply network.
 
     Returns:
-        ``(cut_value, cut_edges)`` where each cut edge is
-        ``(u, v, capacity)`` with ``u ∈ S``, ``v ∈ T``.
+        ``(cut_value, cut_edges, source_side, sink_side)`` where each cut
+        edge is ``(u, v, capacity)`` with ``u ∈ S``, ``v ∈ T``.
     """
     max_flow, _flow, residual = _edmonds_karp(
         graph, source, sink, record_steps=record_steps
     )
 
     reachable = _residual_reachable(residual, source)
+    all_nodes = graph.get_nodes()
+    source_side = [n for n in all_nodes if n in reachable]
+    sink_side = [n for n in all_nodes if n not in reachable]
     if record_steps is not None:
-        record_steps.append(
-            {
-                "action": "reachable_set",
-                "nodes": list(reachable),
-            }
-        )
+        record_steps.append({"action": "source_side", "nodes": source_side})
+        record_steps.append({"action": "sink_side", "nodes": sink_side})
 
     capacities = _oriented_capacities(graph)
     cut_edges: list[tuple[Hashable, Hashable, float]] = []
@@ -129,7 +133,7 @@ def min_cut(
     if abs(cut_value - max_flow) > 1e-6:
         cut_value = max_flow
 
-    return cut_value, cut_edges
+    return cut_value, cut_edges, source_side, sink_side
 
 
 def bipartite_matching(
@@ -187,9 +191,10 @@ def bipartite_matching(
             }
         )
 
-    _max_flow, flow = ford_fulkerson(
-        flow_graph, source, sink, record_steps=record_steps
-    )
+    # Skip Edmonds–Karp animation steps: they reference synthetic super-source /
+    # super-sink nodes that are not on the user's canvas. Matched pairs are
+    # animated one-by-one via the ``match`` steps below.
+    _max_flow, flow = ford_fulkerson(flow_graph, source, sink)
 
     matching: list[tuple[Hashable, Hashable]] = []
     for (u, v), amount in flow.items():
@@ -288,6 +293,14 @@ def hopcroft_karp(
             if pair_u[u] is None and dfs_augment(u):
                 matching_size += 1
                 phase_augments += 1
+                if record_steps is not None:
+                    record_steps.append(
+                        {
+                            "action": "match",
+                            "pair": [u, pair_u[u]],
+                            "phase": phase,
+                        }
+                    )
         if record_steps is not None:
             record_steps.append(
                 {
@@ -301,9 +314,6 @@ def hopcroft_karp(
     pairs = [
         (u, v) for u, v in ((u, pair_u[u]) for u in left_nodes) if v is not None
     ]
-    if record_steps is not None:
-        for u, v in pairs:
-            record_steps.append({"action": "match", "pair": [u, v]})
 
     return pairs, matching_size
 

@@ -177,11 +177,15 @@ export function buildAlgorithmBody(graph, algorithmId, params) {
   if (params.sink !== '' && params.sink != null) {
     body.sink = coerceId(params.sink)
   }
-  if (params.leftNodes) {
-    body.left_nodes = parseIdList(params.leftNodes)
+  if (params.leftNodes != null && params.leftNodes !== '') {
+    body.left_nodes = Array.isArray(params.leftNodes)
+      ? params.leftNodes.map(coerceId)
+      : parseIdList(params.leftNodes)
   }
-  if (params.rightNodes) {
-    body.right_nodes = parseIdList(params.rightNodes)
+  if (params.rightNodes != null && params.rightNodes !== '') {
+    body.right_nodes = Array.isArray(params.rightNodes)
+      ? params.rightNodes.map(coerceId)
+      : parseIdList(params.rightNodes)
   }
 
   // A* coordinates: place nodes on a circle if none exist.
@@ -337,29 +341,47 @@ export function formatAlgorithmResult(algorithmId, result) {
     case 'max-flow':
       return {
         title: 'Maximum flow',
-        lines: [`Max flow value: ${formatNum(result.max_flow)}`],
+        lines: [
+          `Max flow value: ${formatNum(result.max_flow)}`,
+          ...(result.flow || []).length
+            ? [
+                `Flow on edges (${result.flow.length}):`,
+                ...result.flow.map(
+                  (e) => `${e.u} → ${e.v}  (flow ${formatNum(e.flow)})`,
+                ),
+              ]
+            : [],
+        ],
       }
-    case 'min-cut':
+    case 'min-cut': {
+      const cutEdges = result.cut_edges || []
       return {
         title: 'Minimum cut',
         lines: [
           `Cut value: ${formatNum(result.cut_value)}`,
-          `Cut edges: ${(result.cut_edges || [])
-            .map((e) => `${e.u}→${e.v}`)
-            .join(', ') || 'none'}`,
+          `Source side: {${(result.source_side || []).join(', ') || '—'}}`,
+          `Sink side: {${(result.sink_side || []).join(', ') || '—'}}`,
+          `Cut edges (${cutEdges.length}):`,
+          ...cutEdges.map(
+            (e) =>
+              `${e.u} → ${e.v}` +
+              (e.capacity != null ? `  (cap ${formatNum(e.capacity)})` : ''),
+          ),
         ],
       }
+    }
     case 'bipartite-matching':
-    case 'hopcroft-karp':
+    case 'hopcroft-karp': {
+      const pairs = result.matching || []
       return {
         title: 'Maximum matching',
         lines: [
-          `Size: ${result.size}`,
-          `Pairs: ${(result.matching || [])
-            .map((p) => `${p.left}–${p.right}`)
-            .join(', ') || 'none'}`,
+          `Matching size: ${result.size}`,
+          `Matched pairs (${pairs.length}):`,
+          ...pairs.map((p) => `${p.left} – ${p.right}`),
         ],
       }
+    }
     case 'pagerank':
       return {
         title: 'PageRank',

@@ -17,8 +17,8 @@ export default function AlgorithmPanel({
   const [goal, setGoal] = useState('')
   const [source, setSource] = useState('')
   const [sink, setSink] = useState('')
-  const [leftNodes, setLeftNodes] = useState('')
-  const [rightNodes, setRightNodes] = useState('')
+  const [leftNodes, setLeftNodes] = useState([])
+  const [rightNodes, setRightNodes] = useState([])
   const [error, setError] = useState(null)
 
   const category = ALGORITHM_CATEGORIES.find((c) => c.id === categoryId)
@@ -58,9 +58,18 @@ export default function AlgorithmPanel({
       setError('Sink node is required')
       return
     }
-    if (needs.includes('leftRight') && (!leftNodes.trim() || !rightNodes.trim())) {
-      setError('Provide left_nodes and right_nodes (comma-separated)')
-      return
+    if (needs.includes('leftRight')) {
+      if (!leftNodes.length || !rightNodes.length) {
+        setError('Assign at least one node to Left and one to Right')
+        return
+      }
+      const overlap = leftNodes.filter((id) =>
+        rightNodes.some((r) => String(r) === String(id)),
+      )
+      if (overlap.length) {
+        setError('Left and Right sets must be disjoint')
+        return
+      }
     }
 
     try {
@@ -156,24 +165,15 @@ export default function AlgorithmPanel({
           />
         )}
         {algorithm?.needs?.includes('leftRight') && (
-          <>
-            <label className="field">
-              <span>Left nodes</span>
-              <input
-                value={leftNodes}
-                onChange={(e) => setLeftNodes(e.target.value)}
-                placeholder="0, 1, 2"
-              />
-            </label>
-            <label className="field">
-              <span>Right nodes</span>
-              <input
-                value={rightNodes}
-                onChange={(e) => setRightNodes(e.target.value)}
-                placeholder="3, 4, 5"
-              />
-            </label>
-          </>
+          <PartitionPicker
+            nodes={nodeOptions}
+            left={leftNodes}
+            right={rightNodes}
+            onChange={(nextLeft, nextRight) => {
+              setLeftNodes(nextLeft)
+              setRightNodes(nextRight)
+            }}
+          />
         )}
         {algorithm?.needs?.includes('coords') && (
           <p className="hint">
@@ -215,5 +215,103 @@ function NodeSelect({ label, value, onChange, options, allowEmpty = false }) {
         ))}
       </select>
     </label>
+  )
+}
+
+/**
+ * Click-to-assign bipartition UI: each node cycles Unassigned → Left → Right.
+ */
+function PartitionPicker({ nodes, left, right, onChange }) {
+  const leftSet = useMemo(
+    () => new Set(left.map((id) => String(id))),
+    [left],
+  )
+  const rightSet = useMemo(
+    () => new Set(right.map((id) => String(id))),
+    [right],
+  )
+
+  const sideOf = (id) => {
+    const key = String(id)
+    if (leftSet.has(key)) return 'left'
+    if (rightSet.has(key)) return 'right'
+    return 'none'
+  }
+
+  const cycle = (id) => {
+    const key = String(id)
+    const without = (arr) => arr.filter((x) => String(x) !== key)
+    const side = sideOf(id)
+    if (side === 'none') {
+      onChange([...left, id], without(right))
+    } else if (side === 'left') {
+      onChange(without(left), [...without(right), id])
+    } else {
+      onChange(without(left), without(right))
+    }
+  }
+
+  const splitEvenly = () => {
+    const mid = Math.ceil(nodes.length / 2)
+    onChange(nodes.slice(0, mid), nodes.slice(mid))
+  }
+
+  const clear = () => onChange([], [])
+
+  return (
+    <div className="partition">
+      <div className="partition__header">
+        <span className="field-label">Bipartition</span>
+        <div className="partition__actions">
+          <button type="button" className="btn btn--ghost btn--tiny" onClick={splitEvenly}>
+            Split evenly
+          </button>
+          <button type="button" className="btn btn--ghost btn--tiny" onClick={clear}>
+            Clear
+          </button>
+        </div>
+      </div>
+      <p className="hint">
+        Click a node to cycle: unassigned → Left → Right. Matching needs both
+        sets non-empty and disjoint.
+      </p>
+      <div className="partition__chips" role="group" aria-label="Assign nodes to Left or Right">
+        {nodes.length === 0 ? (
+          <p className="muted">Load a graph to assign nodes.</p>
+        ) : (
+          nodes.map((id) => {
+            const side = sideOf(id)
+            return (
+              <button
+                key={String(id)}
+                type="button"
+                className={`partition__chip partition__chip--${side}`}
+                onClick={() => cycle(id)}
+                title={
+                  side === 'none'
+                    ? 'Unassigned — click for Left'
+                    : side === 'left'
+                      ? 'Left — click for Right'
+                      : 'Right — click to clear'
+                }
+              >
+                <span className="partition__chip-side">
+                  {side === 'left' ? 'L' : side === 'right' ? 'R' : '·'}
+                </span>
+                {String(id)}
+              </button>
+            )
+          })
+        )}
+      </div>
+      <div className="partition__summary">
+        <span>
+          Left ({left.length}): {left.map(String).join(', ') || '—'}
+        </span>
+        <span>
+          Right ({right.length}): {right.map(String).join(', ') || '—'}
+        </span>
+      </div>
+    </div>
   )
 }

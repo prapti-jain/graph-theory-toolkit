@@ -468,7 +468,9 @@ def flows_min_cut(body: GraphBody) -> dict[str, Any]:
     source, sink = _require_source_sink(body)
     steps: list[dict[str, Any]] = []
     try:
-        value, cut_edges = min_cut(graph, source, sink, record_steps=steps)
+        value, cut_edges, source_side, sink_side = min_cut(
+            graph, source, sink, record_steps=steps
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -477,6 +479,8 @@ def flows_min_cut(body: GraphBody) -> dict[str, Any]:
         "cut_edges": [
             {"u": u, "v": v, "capacity": cap} for u, v, cap in cut_edges
         ],
+        "source_side": source_side,
+        "sink_side": sink_side,
         "steps": steps,
     }
 

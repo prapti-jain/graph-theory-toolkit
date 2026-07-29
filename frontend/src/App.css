@@ -187,6 +187,21 @@
   border-color: #9fd6c4;
 }
 
+.swatch--flow {
+  background: #6a9fe0;
+  border-color: #a8c8f0;
+}
+
+.swatch--source-side {
+  background: #3d6f9a;
+  border-color: #8ec0e8;
+}
+
+.swatch--sink-side {
+  background: #9a4a5e;
+  border-color: #e0a0b0;
+}
+
 .swatch--result {
   background: #c45c6a;
   border-color: #e8a8b2;

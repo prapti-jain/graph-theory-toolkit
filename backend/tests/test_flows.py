@@ -99,9 +99,12 @@ def test_classic_four_node_flow_network():
     assert sum(flow.get((0, v), 0.0) for v in (1, 2)) == pytest.approx(5.0)
     assert sum(flow.get((u, 3), 0.0) for u in (1, 2)) == pytest.approx(5.0)
 
-    cut_value, cut_edges = min_cut(g, 0, 3)
+    cut_value, cut_edges, source_side, sink_side = min_cut(g, 0, 3)
     assert cut_value == pytest.approx(5.0, abs=1e-9)
     assert cut_edges
+    assert 0 in source_side
+    assert 3 in sink_side
+    assert not (set(source_side) & set(sink_side))
 
 
 def test_ford_fulkerson_matches_networkx():
@@ -115,8 +118,11 @@ def test_min_cut_equals_max_flow_theorem():
     for _ in range(5):
         g, source, sink = _random_flow_network(n=10, p=0.4)
         flow_value, _ = ford_fulkerson(g, source, sink)
-        cut_value, cut_edges = min_cut(g, source, sink)
+        cut_value, cut_edges, source_side, sink_side = min_cut(g, source, sink)
         assert cut_value == pytest.approx(flow_value, abs=1e-6)
+        assert source in source_side
+        assert sink in sink_side
+        assert set(source_side) | set(sink_side) == set(g.get_nodes())
         assert cut_value == pytest.approx(
             nx.maximum_flow_value(g.to_networkx(), source, sink, capacity="weight"),
             abs=1e-6,
@@ -126,7 +132,7 @@ def test_min_cut_equals_max_flow_theorem():
 
 def test_min_cut_edges_disconnect_source_from_sink():
     g, source, sink = _random_flow_network(n=14, p=0.35)
-    cut_value, cut_edges = min_cut(g, source, sink)
+    cut_value, cut_edges, _source_side, _sink_side = min_cut(g, source, sink)
     if cut_value == 0:
         return
 

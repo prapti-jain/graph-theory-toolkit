@@ -28,6 +28,16 @@ export const NODE_ROLE_COLORS = {
     background: '#5a6574',
     border: '#8b97a8',
   },
+  /** Min-cut: nodes reachable from source in the residual graph. */
+  source_side: {
+    background: '#3d6f9a',
+    border: '#8ec0e8',
+  },
+  /** Min-cut: nodes on the sink side of the cut. */
+  sink_side: {
+    background: '#9a4a5e',
+    border: '#e0a0b0',
+  },
 }
 
 export const EDGE_ROLE_COLORS = {
@@ -44,6 +54,9 @@ export const EDGE_ROLE_COLORS = {
 export const ROLE_PRIORITY = {
   current: 100,
   path: 80,
+  /** Above path so min-cut partition recolors after flow-augmentation steps. */
+  source_side: 85,
+  sink_side: 85,
   mst: 75,
   flow: 70,
   result: 70,
@@ -178,6 +191,8 @@ export function computeHighlightsFromSteps(
         break
       case 'augment':
         ;(step.path || []).forEach(([u, v]) => {
+          // Ignore synthetic super-source / super-sink from bipartite reduction.
+          if (isSyntheticNode(u) || isSyntheticNode(v)) return
           setNode(u, 'path')
           setNode(v, 'path')
           setEdge(u, v, 'flow')
@@ -187,11 +202,16 @@ export function computeHighlightsFromSteps(
         if (step.pair) {
           setNode(step.pair[0], 'matched')
           setNode(step.pair[1], 'matched')
+          // Green "path / match" legend color for matched edges.
           setEdge(step.pair[0], step.pair[1], 'path')
         }
         break
+      case 'source_side':
       case 'reachable_set':
-        ;(step.nodes || []).forEach((n) => setNode(n, 'visited'))
+        ;(step.nodes || []).forEach((n) => setNode(n, 'source_side'))
+        break
+      case 'sink_side':
+        ;(step.nodes || []).forEach((n) => setNode(n, 'sink_side'))
         break
       case 'update':
         setNode(step.i, 'visited')
@@ -250,8 +270,18 @@ export function computeHighlightsFromSteps(
       }
       if (step.node != null) setNode(step.node, 'current')
     } else if (action === 'augment' && step.path?.length) {
-      const last = step.path[step.path.length - 1]
-      setNode(last[1] ?? last[0], 'current')
+      const visible = step.path.filter(
+        ([u, v]) => !isSyntheticNode(u) && !isSyntheticNode(v),
+      )
+      const last = visible[visible.length - 1] || step.path[step.path.length - 1]
+      if (last) setNode(last[1] ?? last[0], 'current')
+    } else if (action === 'match' && step.pair) {
+      setNode(step.pair[0], 'current')
+      setNode(step.pair[1], 'current')
+    } else if (action === 'cut_edge' && step.edge) {
+      // Keep cut edge as red "result"; only pulse endpoints.
+      setNode(step.edge[0], 'current')
+      if (step.edge[1] != null) setNode(step.edge[1], 'current')
     }
   }
 
@@ -261,4 +291,13 @@ export function computeHighlightsFromSteps(
     highlightedNodes: new Set(Object.keys(nodeRoles)),
     highlightedEdges: new Set(Object.keys(edgeRoles)),
   }
+}
+
+/** Synthetic nodes introduced by the bipartite→flow reduction. */
+function isSyntheticNode(id) {
+  if (id == null) return true
+  if (Array.isArray(id)) return true
+  if (typeof id === 'object') return true
+  const s = String(id)
+  return s.includes('__src__') || s.includes('__sink__')
 }

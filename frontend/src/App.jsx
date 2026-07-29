@@ -185,8 +185,11 @@ function App() {
               <li><span className="swatch swatch--current" /> current</li>
               <li><span className="swatch swatch--visited" /> visited</li>
               <li><span className="swatch swatch--path" /> path / match</li>
-              <li><span className="swatch swatch--mst" /> MST / flow</li>
-              <li><span className="swatch swatch--result" /> result</li>
+              <li><span className="swatch swatch--mst" /> MST</li>
+              <li><span className="swatch swatch--flow" /> flow</li>
+              <li><span className="swatch swatch--source-side" /> source side</li>
+              <li><span className="swatch swatch--sink-side" /> sink side</li>
+              <li><span className="swatch swatch--result" /> result / cut</li>
             </ul>
           </div>
         </aside>
