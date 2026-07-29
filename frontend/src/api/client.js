@@ -2,9 +2,12 @@ import axios from 'axios'
 
 /**
  * Shared HTTP client for the Graph Theory Toolkit backend.
+ *
+ * Production: set VITE_API_URL to the Render backend URL (no trailing slash).
+ * Local default: http://localhost:8000
  */
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
   headers: {
     'Content-Type': 'application/json',
   },
